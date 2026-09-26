@@ -31,7 +31,10 @@ import AppKit
 // MARK: - Protocols
 
 public protocol GalleryCollectionViewItemDelegate: GalleryCollectionContentViewDelegate {
-    func loadImage(url: URL, completion: @escaping (NSImage?) -> Void)
+    func loadImage(
+        model: GalleryModel,
+        completion: @escaping (NSImage?) -> Void
+    )
     func mutate(_ collectionView: NSCollectionView, model: GalleryModel, field: GalleryModel.MutateField, sender: Any?)
 }
 
@@ -131,6 +134,9 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
         case .all:
             contentView.setAppearanceType(.all, animated: animated)
 
+        case .both:
+            contentView.setAppearanceType(.both, animated: animated)
+
         case .light:
             contentView.setAppearanceType(.light, animated: animated)
 
@@ -156,7 +162,7 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
             contentView.time = Date()
         }
 
-        delegate?.loadImage(url: model.url) { [weak self] image in
+        delegate?.loadImage(model: model) { [weak self] image in
             guard self?.model == model else {
                 return
             }
@@ -193,25 +199,18 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
             self?.delegate?.mutate(collectionView, model: model, field: .primary(button.isSelected), sender: button)
         }
 
-        contentView.onAppearanceTypeChange = { [weak model, weak self] button in
+        contentView.onAppearanceTypeChange = {
+            [weak model, weak self] appearance in
             guard let model = model, let collectionView = self?.collectionView else {
                 return
             }
-            
-            let appearanceType: AppearanceType
 
-            switch button.getType() {
-            case .all:
-                appearanceType = .all
-
-            case .dark:
-                appearanceType = .dark
-
-            case .light:
-                appearanceType = .light
-            }
-
-            self?.delegate?.mutate(collectionView, model: model, field: .appearance(appearanceType), sender: button)
+            self?.delegate?.mutate(
+                collectionView,
+                model: model,
+                field: .appearance(appearance),
+                sender: nil
+            )
         }
     }
     
@@ -221,9 +220,16 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
         contentView.altitudeText = textList.altitudeText
         contentView.altitudePlaceholder = textList.altitudePlaceholder
         contentView.timeText = textList.timeText
-        contentView.appearanceTooltipTitle = textList.appearanceTooltipTitle
-        contentView.appearanceTooltipDescription = textList.appearanceTooltipDescription
-        contentView.primaryTooltipTitle = textList.primaryTooltipTitle
-        contentView.primaryTooltipDescription = textList.primaryTooltipDescription
+        contentView.lightAppearanceTooltipTitle =
+            textList.lightAppearanceTooltipTitle
+        contentView.lightAppearanceTooltipDescription =
+            textList.lightAppearanceTooltipDescription
+        contentView.darkAppearanceTooltipTitle =
+            textList.darkAppearanceTooltipTitle
+        contentView.darkAppearanceTooltipDescription =
+            textList.darkAppearanceTooltipDescription
+        contentView.previewTooltipTitle = textList.previewTooltipTitle
+        contentView.previewTooltipDescription =
+            textList.previewTooltipDescription
     }
 }

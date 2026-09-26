@@ -180,3 +180,10 @@
 "support.purchaseFailure.description.first" = "The purchase was cancelled.";
 "support.purchaseFailure.description.second" = "You can support Equinox anytime if you’d like.";
 "support.purchaseFailure.description.third" = "Thank you for using the app!";
+
+"wallpaper.gallery.tooltip.preview.title" = "Preview";
+"wallpaper.gallery.tooltip.preview.description" = "Choose the image shown in the wallpaper preview. This does not affect the desktop images.";
+"wallpaper.gallery.tooltip.light.title" = "Light desktop";
+"wallpaper.gallery.tooltip.light.description" = "Mark this image as the still picture for Light appearance when a still wallpaper is selected in System Settings.";
+"wallpaper.gallery.tooltip.dark.title" = "Dark desktop";
+"wallpaper.gallery.tooltip.dark.description" = "Mark this image as the still picture for Dark appearance when a still wallpaper is selected in System Settings.";

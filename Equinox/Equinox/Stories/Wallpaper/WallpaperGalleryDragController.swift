@@ -40,8 +40,10 @@ protocol WallpaperGalleryDragControllerDelegate: AnyObject {
     func processExternalCollectionItems(_ urls: [URL], insertIndexPath: IndexPath)
     func deleteCollectionItems()
     func canValidateCollectionDrag() -> Bool
-    func loadImage(url: URL, completion: @escaping (NSImage?) -> Void)
-    func collectionDidScroll()
+    func loadImage(
+        model: GalleryModel,
+        completion: @escaping (NSImage?) -> Void
+    )
     func collectionMenuNeedsUpdate(_ menu: NSMenu)
 }
 
@@ -123,6 +125,9 @@ final class WallpaperGalleryDragController {
 // MARK: - GalleryCollectionViewDelegate
 
 extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
+    func didScroll(_ scrollView: NSScrollView) {
+    }
+
     func registerDraggedTypes(for collectionView: NSCollectionView) {
         collectionView.registerForDraggedTypes([
             .fileURL,
@@ -196,8 +201,11 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
         delegate?.deleteCollectionItems()
     }
 
-    func loadImage(url: URL, completion: @escaping (NSImage?) -> Void) {
-        delegate?.loadImage(url: url, completion: completion)
+    func loadImage(
+        model: GalleryModel,
+        completion: @escaping (NSImage?) -> Void
+    ) {
+        delegate?.loadImage(model: model, completion: completion)
     }
 
     func mutate(_ collectionView: NSCollectionView, model: GalleryModel, field: GalleryModel.MutateField, sender: Any?) {
@@ -205,10 +213,6 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
         delegate?.refreshCollectionData(index, field: field, sender: sender)
     }
 
-    func didScroll(_ scrollView: NSScrollView) {
-        delegate?.collectionDidScroll()
-    }
-    
     func menuNeedsUpdate(_ menu: NSMenu) {
         delegate?.collectionMenuNeedsUpdate(menu)
     }

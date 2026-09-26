@@ -28,12 +28,14 @@
 
 import AppKit
 import EquinoxCore
+import ImageIO
 
 // MARK: - Protocols
 
 protocol ImageProvider {
     func loadImage(
         url: URL,
+        sourceIndex: Int?,
         resizeMode: ImageResizeMode,
         completion: @escaping (NSImage?) -> Void
     )
@@ -66,8 +68,14 @@ final class ImageProviderImpl: ImageProvider {
     
     // MARK: - Public
 
-    func loadImage(url: URL, resizeMode: ImageResizeMode, completion: @escaping (NSImage?) -> Void) {
-        if let cachedImage = imageService.retrieveCachedImage(url: url) {
+    func loadImage(
+        url: URL,
+        sourceIndex: Int?,
+        resizeMode: ImageResizeMode,
+        completion: @escaping (NSImage?) -> Void
+    ) {
+        if sourceIndex == nil,
+           let cachedImage = imageService.retrieveCachedImage(url: url) {
             completion(cachedImage)
             return
         }
@@ -75,7 +83,19 @@ final class ImageProviderImpl: ImageProvider {
             guard let self = self else {
                 return
             }
-            guard let image = NSImage(contentsOf: url) else {
+            let image: NSImage?
+            if let index = sourceIndex,
+               let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+               let frame = CGImageSourceCreateImageAtIndex(
+                source, index, nil
+               ) {
+                image = NSImage(cgImage: frame, size: .zero)
+            } else if sourceIndex == nil {
+                image = NSImage(contentsOf: url)
+            } else {
+                image = nil
+            }
+            guard let image = image else {
                 OperationQueue.main.addOperation {
                     completion(nil)
                 }
@@ -104,7 +124,9 @@ final class ImageProviderImpl: ImageProvider {
             }
 
             let resizedImage = self.imageService.resizeImage(image: image, size: size)
-            self.imageService.cacheImage(url: url, image: resizedImage)
+            if sourceIndex == nil {
+                self.imageService.cacheImage(url: url, image: resizedImage)
+            }
 
             OperationQueue.main.addOperation {
                 completion(resizedImage)

@@ -55,6 +55,22 @@ public enum Localization {
         public enum File {
             public static let file = Localization.localizedString(key: "menu.file")
             public static let new = Localization.localizedString(key: "menu.file.new")
+            public static let open = Localization.localizedString(
+                key: "menu.file.open"
+            )
+            public static let revert = Localization.localizedString(
+                key: "menu.file.revert"
+            )
+            public static let saveAs = Localization.localizedString(
+                key: "menu.file.save.as"
+            )
+            public static let openErrorTitle = Localization.localizedString(
+                key: "menu.file.open.error.title"
+            )
+            public static let openErrorDescription =
+                Localization.localizedString(
+                key: "menu.file.open.error.description"
+            )
         }
         
         public enum Edit {
@@ -123,6 +139,12 @@ public enum Localization {
         public static let title = Localization.localizedString(key: "welcome.title")
         public static let github = Localization.localizedString(key: "welcome.github")
         public static let support = Localization.localizedString(key: "welcome.support")
+        public static let openExisting = Localization.localizedString(
+            key: "welcome.open.existing"
+        )
+        public static let create = Localization.localizedString(
+            key: "welcome.create.title"
+        )
         public static let choose = Localization.localizedString(key: "welcome.choose.type")
         public static let select = Localization.localizedString(key: "welcome.choose.type.description")
         public static let solar = Localization.localizedString(key: "welcome.types.solar")
@@ -168,10 +190,28 @@ public enum Localization {
             public static let altitude = Localization.localizedString(key: "wallpaper.gallery.altitude")
             public static let altitudeValue = Localization.localizedString(key: "wallpaper.gallery.azimuth.value")
             public static let time = Localization.localizedString(key: "wallpaper.gallery.time")
-            public static let tooltipAppearanceTitle = Localization.localizedString(key: "wallpaper.gallery.tooltip.appearance.title")
-            public static let tooltipAppearanceDescription = Localization.localizedString(key: "wallpaper.gallery.tooltip.appearance.description")
-            public static let tooltipPrimaryTitle = Localization.localizedString(key: "wallpaper.gallery.tooltip.primary.title")
-            public static let tooltipPrimaryDescription = Localization.localizedString(key: "wallpaper.gallery.tooltip.primary.description")
+            public static let tooltipLightTitle = Localization.localizedString(
+                key: "wallpaper.gallery.tooltip.light.title"
+            )
+            public static let tooltipLightDescription =
+                Localization.localizedString(
+                key: "wallpaper.gallery.tooltip.light.description"
+            )
+            public static let tooltipDarkTitle = Localization.localizedString(
+                key: "wallpaper.gallery.tooltip.dark.title"
+            )
+            public static let tooltipDarkDescription =
+                Localization.localizedString(
+                key: "wallpaper.gallery.tooltip.dark.description"
+            )
+            public static let tooltipPreviewTitle =
+                Localization.localizedString(
+                key: "wallpaper.gallery.tooltip.preview.title"
+            )
+            public static let tooltipPreviewDescription =
+                Localization.localizedString(
+                key: "wallpaper.gallery.tooltip.preview.description"
+            )
         }
         
         public enum Appearance {
@@ -181,6 +221,12 @@ public enum Localization {
             public static let lightDescription = Localization.localizedString(key: "wallpaper.appearance.light.description")
             public static let darkTitle = Localization.localizedString(key: "wallpaper.appearance.dark.title")
             public static let darkDescription = Localization.localizedString(key: "wallpaper.appearance.dark.description")
+            public static let bothTitle = Localization.localizedString(
+                key: "wallpaper.appearance.both.title"
+            )
+            public static let bothDescription = Localization.localizedString(
+                key: "wallpaper.appearance.both.description"
+            )
         }
         
         public enum Create {

@@ -42,7 +42,6 @@ protocol WallpaperMainViewControllerDelegate: AnyObject {
 
 extension WallpaperMainViewController {
     private enum Constants {
-        static let appearancePopoverSize = NSSize(width: 260, height: 161)
         static let minimumItemsCount = 1
         static let minimumAppearanceItemsCount = 2
     }
@@ -55,9 +54,8 @@ final class WallpaperMainViewController: ViewController {
     private let fileService: FileService
     private let solarService: SolarService
     private let imageProvider: ImageProvider
+    private let initialAttributes: [ImageAttributes]?
     
-    private weak var appearancePopover: NSPopover?
-    private weak var appearancePopoverView: NSView?
     private weak var galleryController: WallpaperGalleryViewController?
 
     lazy var contentView: MainContentView = {
@@ -72,12 +70,14 @@ final class WallpaperMainViewController: ViewController {
         type: WallpaperType,
         fileService: FileService,
         solarService: SolarService,
-        imageProvider: ImageProvider
+        imageProvider: ImageProvider,
+        initialAttributes: [ImageAttributes]?
     ) {
         self.type = type
         self.fileService = fileService
         self.solarService = solarService
         self.imageProvider = imageProvider
+        self.initialAttributes = initialAttributes
         super.init()
     }
 
@@ -100,10 +100,9 @@ final class WallpaperMainViewController: ViewController {
     }
 
     private func setupView() {
-        addGalleryController()
-
         contentView.createButtonTitle = Localization.Wallpaper.Main.create
         contentView.isCreateButtonEnabled = false
+        addGalleryController()
     }
 
     private func setupActions() {
@@ -127,6 +126,38 @@ final class WallpaperMainViewController: ViewController {
     // MARK: - Public
 
     weak var delegate: WallpaperMainViewControllerDelegate?
+
+    var canRevert: Bool {
+        guard let initial = initialAttributes,
+              let current = convertData(),
+              initial.count == current.count else {
+            return initialAttributes != nil
+        }
+        for (saved, edited) in zip(initial, current) {
+            if saved.url != edited.url
+                || saved.sourceIndex != edited.sourceIndex
+                || saved.primary != edited.primary
+                || saved.appearanceType != edited.appearanceType {
+                return true
+            }
+            switch (saved.imageType, edited.imageType) {
+            case let (.solar(a, z), .solar(b, y)):
+                if a != b || z != y { return true }
+            case let (.time(a), .time(b)):
+                if a != b { return true }
+            case (.appearance, .appearance):
+                break
+            default:
+                return true
+            }
+        }
+        return false
+    }
+
+    func revert() {
+        guard let initial = initialAttributes else { return }
+        galleryController?.replace(with: initial)
+    }
 
     // MARK: - Private
 
@@ -156,6 +187,9 @@ final class WallpaperMainViewController: ViewController {
             case .all:
                 appearanceType = nil
 
+            case .both:
+                appearanceType = .both
+
             case .light:
                 appearanceType = .light
 
@@ -168,7 +202,8 @@ final class WallpaperMainViewController: ViewController {
                 index: model.number - 1,
                 primary: model.primary,
                 imageType: imageType,
-                appearanceType: appearanceType
+                appearanceType: appearanceType,
+                sourceIndex: model.sourceIndex
             ))
         }
 
@@ -203,6 +238,12 @@ final class WallpaperMainViewController: ViewController {
         galleryController = controller
         controller.delegate = self
         addChildController(controller, container: contentView.containerView)
+        if let initial = initialAttributes {
+            DispatchQueue.main.async { [weak controller] in
+                controller?.view.layoutSubtreeIfNeeded()
+                controller?.replace(with: initial)
+            }
+        }
     }
     
     private var canCreateWallpaper: Bool {
@@ -250,55 +291,11 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
         }
     }
     
-    func presentAppearancePopover(relativeTo view: NSView, selectedType: EquinoxUI.AppearanceType) {
-        guard appearancePopover == nil || view != appearancePopoverView else {
-            return
-        }
-
-        let controller = WallpaperAppearanceViewController(type: type)
-        controller.delegate = self
-
-        switch selectedType {
-        case .all:
-            controller.selectedAppearanceType = .all
-
-        case .light:
-            controller.selectedAppearanceType = .light
-
-        case .dark:
-            controller.selectedAppearanceType = .dark
-        }
-
-        let popover = NSPopover()
-        popover.contentSize = Constants.appearancePopoverSize
-        popover.behavior = .transient
-        popover.animates = true
-        popover.contentViewController = controller
-        popover.show(relativeTo: .zero, of: view, preferredEdge: .minY)
-
-        appearancePopover = popover
-        appearancePopoverView = view
-    }
-    
-    func closePopover() {
-        appearancePopover?.close()
-        appearancePopoverView = nil
-    }
-    
     func dataWasChanged() {
         contentView.isCreateButtonEnabled = canCreateWallpaper
     }
     
     func notify(_ text: String) {
         delegate?.mainViewControllerShouldNotify(text)
-    }
-}
-
-// MARK: - AppearanceViewControllerDelegate
-
-extension WallpaperMainViewController: WallpaperAppearanceViewControllerDelegate {
-    func didSelect(_ model: AppearanceContentView.Model) {
-        closePopover()
-        galleryController?.didSelectAppearance(model)
     }
 }

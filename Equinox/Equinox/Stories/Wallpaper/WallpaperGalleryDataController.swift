@@ -64,16 +64,20 @@ final class WallpaperGalleryDataController {
     func refreshData() {
         var containsPrimary = false
         var totalSize: UInt64 = 0
+        var countedSources = Set<URL>()
         
         for (index, model) in mutableData.items.enumerated() {
             if model.primary {
                 containsPrimary = true
             }
             model.number = index + 1
-            if let filesize = filesizeCache[model.url] {
-                totalSize += filesize
-            } else {
-                totalSize += calculateFilesize(model.url) ?? 0
+            if model.sourceIndex == nil
+                || countedSources.insert(model.url).inserted {
+                if let filesize = filesizeCache[model.url] {
+                    totalSize += filesize
+                } else {
+                    totalSize += calculateFilesize(model.url) ?? 0
+                }
             }
         }
         
@@ -131,6 +135,11 @@ final class WallpaperGalleryDataController {
     
     func insert(_ items: [GalleryModel], at index: Int) {
         mutableData.items.insert(contentsOf: items, at: index)
+    }
+
+    func replace(with items: [GalleryModel]) {
+        mutableData.items = items
+        refreshData()
     }
     
     func remove(at index: Int) {

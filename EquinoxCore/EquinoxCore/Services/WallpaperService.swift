@@ -80,7 +80,8 @@ public final class WallpaperServiceImpl: WallpaperService {
                     index: index,
                     primary: attribute.primary,
                     imageType: attribute.imageType,
-                    appearanceType: attribute.appearanceType
+                    appearanceType: attribute.appearanceType,
+                    sourceIndex: attribute.sourceIndex
                 )
             )
         }

@@ -59,6 +59,7 @@ final class WallpaperCreateViewController: ViewController {
     private let imageAttributes: [ImageAttributes]
     private let wallpaperService: WallpaperService
     private let imageProvider: ImageProvider
+    private let sourceURL: URL?
     
     private let operationQueue: OperationQueue = {
         let queue = OperationQueue()
@@ -82,12 +83,14 @@ final class WallpaperCreateViewController: ViewController {
         type: WallpaperType,
         imageAttributes: [ImageAttributes],
         wallpaperService: WallpaperService,
-        imageProvider: ImageProvider
+        imageProvider: ImageProvider,
+        sourceURL: URL?
     ) {
         self.type = type
         self.imageAttributes = imageAttributes
         self.wallpaperService = wallpaperService
         self.imageProvider = imageProvider
+        self.sourceURL = sourceURL
         super.init()
     }
 
@@ -111,7 +114,9 @@ final class WallpaperCreateViewController: ViewController {
     }
 
     private func setupView() {        
-        contentView.saveButtonTitle = Localization.Wallpaper.Create.save
+        contentView.saveButtonTitle = sourceURL == nil
+            ? Localization.Wallpaper.Create.save
+            : Localization.Menu.File.saveAs
         contentView.setButtonTitle = Localization.Wallpaper.Create.set
         contentView.shareButtonTitle = Localization.Wallpaper.Create.share
         contentView.createButtonTitle = Localization.Wallpaper.Create.new
@@ -250,7 +255,12 @@ final class WallpaperCreateViewController: ViewController {
 
         let savePanel = NSSavePanel()
         savePanel.canCreateDirectories = true
-        savePanel.nameFieldStringValue = Constants.imageFilename
+        if let sourceURL = sourceURL {
+            let name = sourceURL.deletingPathExtension().lastPathComponent
+            savePanel.nameFieldStringValue = "\(name)-edited.heic"
+        } else {
+            savePanel.nameFieldStringValue = Constants.imageFilename
+        }
         if #available(macOS 11.0, *) {
             savePanel.allowedContentTypes = [.heic]
         }
@@ -348,8 +358,13 @@ extension WallpaperCreateViewController: AnimatedImageViewDelegate {
     }
 
     func image(for index: Int, completion: @escaping (NSImage?) -> Void) {
-        let url = imageAttributes[index].url
-        imageProvider.loadImage(url: url, resizeMode: .resized(size: Constants.thumbnailSize, respectAspect: true)) { image in
+        let attribute = imageAttributes[index]
+        imageProvider.loadImage(
+            url: attribute.url,
+            sourceIndex: attribute.sourceIndex,
+            resizeMode: .resized(size: Constants.thumbnailSize,
+                                 respectAspect: true)
+        ) { image in
             completion(image)
         }
     }
@@ -363,11 +378,18 @@ extension WallpaperCreateViewController: DragAnimatedImageViewDelegate {
     }
 
     func beginDragginSession(for dragAnimatedImageView: DragAnimatedImageView, event: NSEvent) {
-        guard let url = imageAttributes.first(where: { $0.primary })?.url else {
+        guard let attribute = imageAttributes.first(where: {
+            $0.primary
+        }) else {
             return
         }
         
-        imageProvider.loadImage(url: url, resizeMode: .resized(size: Constants.thumbnailSize, respectAspect: true)) { image in
+        imageProvider.loadImage(
+            url: attribute.url,
+            sourceIndex: attribute.sourceIndex,
+            resizeMode: .resized(size: Constants.thumbnailSize,
+                                 respectAspect: true)
+        ) { image in
             let provider = NSFilePromiseProvider(fileType: UTType.image.identifier, delegate: self)
             let draggingItem = NSDraggingItem(pasteboardWriter: provider)
             draggingItem.setDraggingFrame(dragAnimatedImageView.bounds, contents: image)

@@ -7,6 +7,11 @@
 
 "menu.file" = "파일";
 "menu.file.new" = "새 파일";
+"menu.file.open" = "Open...";
+"menu.file.revert" = "Revert to Saved";
+"menu.file.save.as" = "Save As...";
+"menu.file.open.error.title" = "Cannot Open Wallpaper";
+"menu.file.open.error.description" = "Not a readable dynamic HEIF wallpaper.";
 
 "menu.edit" = "수정";
 "menu.edit.undo" = "실행 취소";
@@ -33,10 +38,12 @@
 "toolbar.more" = "더 보기";
 
 "welcome.title" = "Equinox에 오신 것을 환영합니다.";
+"welcome.create.title" = "새 배경화면 만들기";
 "welcome.welcome" = "%@에 오신 것을 환영합니다.";
 "welcome.version" = "버전 %@";
 "welcome.github" = "Github";
 "welcome.support" = "Equinox 지원하기";
+"welcome.open.existing" = "또는 기존 배경화면 열기...";
 "welcome.choose.type" = "유형 선택";
 "welcome.choose.type.description" = "만들고 싶은 배경화면의 유형을 선택하세요";
 "welcome.types.solar" = "태양";
@@ -64,7 +71,7 @@
 "wallpaper.gallery.altitude.value" = "값";
 "wallpaper.gallery.time" = "시간:";
 "wallpaper.gallery.tooltip.appearance.title" = "화면 모드";
-"wallpaper.gallery.tooltip.appearance.description" = "그래픽 모드. 오직 하나의 이미지를 라이트 또는 다크모드에 적용할 수 있습니다.";
+"wallpaper.gallery.tooltip.appearance.description" = "라이트와 다크 원형 표시로 데스크탑 이미지를 선택합니다. Solar 또는 Time 배경화면에서는 표시가 없는 이미지도 순서에 포함됩니다.";
 "wallpaper.gallery.tooltip.primary.title" = "기본";
 "wallpaper.gallery.tooltip.primary.description" = "기본 이미지는 배경화면 설정의 섬네일로 보여질 이미지를 의미합니다.";
 "wallpaper.gallery.wrong.images.type" = "(%d)개의 파일이 지원하지 않는 확장자입니다. 확장자는 png, jpeg, tiff, heif만을 지원합니다.";
@@ -75,6 +82,8 @@
 "wallpaper.appearance.light.description" = "라이트 모드일 경우 보여지는 배경화면";
 "wallpaper.appearance.dark.title" = "다크모드 (고정)";
 "wallpaper.appearance.dark.description" = "다크 모드일 경우 보여지는 배경화면";
+"wallpaper.appearance.both.title" = "라이트 및 다크 (정지 화면)";
+"wallpaper.appearance.both.description" = "두 모드에서 사용";
 
 "wallpaper.create.success" = "성공";
 "wallpaper.create.success.description" = "배경화면을 원하는 곳으로 드래그하거나 저장하세요";
@@ -180,3 +189,10 @@
 "support.purchaseFailure.description.first" = "구매가 취소되었습니다.";
 "support.purchaseFailure.description.second" = "원하실 때 언제든지 Equinox를 후원하실 수 있어요.";
 "support.purchaseFailure.description.third" = "앱을 사용해 주셔서 감사합니다!";
+
+"wallpaper.gallery.tooltip.preview.title" = "미리보기";
+"wallpaper.gallery.tooltip.preview.description" = "배경화면 미리보기에 표시할 이미지를 선택합니다. 데스크탑 이미지 지정에는 영향을 주지 않습니다.";
+"wallpaper.gallery.tooltip.light.title" = "라이트 데스크탑";
+"wallpaper.gallery.tooltip.light.description" = "라이트 화면 모드에서 데스크탑 이미지로 사용합니다. Solar 또는 Time 배경화면에서는 표시가 없는 이미지도 순서에 포함됩니다.";
+"wallpaper.gallery.tooltip.dark.title" = "다크 데스크탑";
+"wallpaper.gallery.tooltip.dark.description" = "다크 화면 모드에서 데스크탑 이미지로 사용합니다. Solar 또는 Time 배경화면에서는 표시가 없는 이미지도 순서에 포함됩니다.";

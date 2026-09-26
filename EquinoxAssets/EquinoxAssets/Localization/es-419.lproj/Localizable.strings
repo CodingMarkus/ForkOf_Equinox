@@ -7,6 +7,11 @@
 
 "menu.file" = "Archivo";
 "menu.file.new" = "Nuevo";
+"menu.file.open" = "Open...";
+"menu.file.revert" = "Revert to Saved";
+"menu.file.save.as" = "Save As...";
+"menu.file.open.error.title" = "Cannot Open Wallpaper";
+"menu.file.open.error.description" = "Not a readable dynamic HEIF wallpaper.";
 
 "menu.edit" = "Edición";
 "menu.edit.undo" = "Deshacer";
@@ -33,10 +38,12 @@
 "toolbar.more" = "Más";
 
 "welcome.title" = "Bienvenido a Equinox";
+"welcome.create.title" = "Crear un nuevo fondo de pantalla";
 "welcome.welcome" = "Bienvenido a %@";
 "welcome.version" = "Versión %@";
 "welcome.github" = "GitHub";
 "welcome.support" = "Apoyar Equinox";
+"welcome.open.existing" = "O abre un fondo de pantalla existente...";
 "welcome.choose.type" = "Elegir tipo";
 "welcome.choose.type.description" = "Seleccione un tipo adecuado para su fondo de pantalla";
 "welcome.types.solar" = "Solar";
@@ -64,7 +71,7 @@
 "wallpaper.gallery.altitude.value" = "Valor";
 "wallpaper.gallery.time" = "Tiempo:";
 "wallpaper.gallery.tooltip.appearance.title" = "Aparencia";
-"wallpaper.gallery.tooltip.appearance.description" = "Modo gráfico. Sólo una imagen puede tener una apariencia clara o oscura.";
+"wallpaper.gallery.tooltip.appearance.description" = "Los círculos Claro y Oscuro eligen los fondos del escritorio. En fondos Solar o Tiempo, las imágenes sin marca permanecen en la secuencia.";
 "wallpaper.gallery.tooltip.primary.title" = "Primario";
 "wallpaper.gallery.tooltip.primary.description" = "La imagen principal se mostrará como una miniatura de fondo de pantalla.";
 "wallpaper.gallery.wrong.images.type" = "Algunos archivos (%d) tienen el tipo de imagen incorrecto. Sólo png, jpeg, tiff, y heic son soportados";
@@ -75,6 +82,8 @@
 "wallpaper.appearance.light.description" = "Imagen de visualización en modo claro estática";
 "wallpaper.appearance.dark.title" = "Oscuro (Quieto)";
 "wallpaper.appearance.dark.description" = "Image de visualización en modo oscuro estática";
+"wallpaper.appearance.both.title" = "Claro y oscuro (fijo)";
+"wallpaper.appearance.both.description" = "Usar esta imagen en ambos modos";
 
 "wallpaper.create.success" = "Éxito";
 "wallpaper.create.success.description" = "Arrastrar o guardar el fondo de pantalla donde quieras";
@@ -180,3 +189,10 @@
 "support.purchaseFailure.description.first" = "La compra fue cancelada.";
 "support.purchaseFailure.description.second" = "Puedes apoyar Equinox cuando quieras.";
 "support.purchaseFailure.description.third" = "¡Gracias por usar la app!";
+
+"wallpaper.gallery.tooltip.preview.title" = "Vista previa";
+"wallpaper.gallery.tooltip.preview.description" = "Elige la imagen de vista previa del fondo. Esto no afecta las imágenes del escritorio.";
+"wallpaper.gallery.tooltip.light.title" = "Escritorio claro";
+"wallpaper.gallery.tooltip.light.description" = "Usa esta imagen como fondo en apariencia clara. En fondos Solar o Tiempo, las imágenes sin marca permanecen en la secuencia.";
+"wallpaper.gallery.tooltip.dark.title" = "Escritorio oscuro";
+"wallpaper.gallery.tooltip.dark.description" = "Usa esta imagen como fondo en apariencia oscura. En fondos Solar o Tiempo, las imágenes sin marca permanecen en la secuencia.";

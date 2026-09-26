@@ -36,6 +36,7 @@ import EquinoxUI
 protocol StoriesController {
     func start()
     func new()
+    func open(_ url: URL) throws
 }
 
 // MARK: - Enums, Structs
@@ -68,6 +69,21 @@ extension StoriesControllerImpl: StoriesController {
     func new() {
         presentWelcome()
     }
+
+    func open(_ url: URL) throws {
+        let opened = try MetadataCoreImpl().readWallpaper(at: url)
+        let type: WallpaperType
+        switch opened.type {
+        case .solar: type = .solar
+        case .time: type = .time
+        case .appearance: type = .appearance
+        }
+        welcomeWindowController?.close()
+        welcomeWindowController = nil
+        presentWallpaper(selectedType: type,
+                         sourceURL: url,
+                         initialAttributes: opened.attributes)
+    }
     
     private func presentWelcome() {
         if let welcomeWindowController = welcomeWindowController {
@@ -80,7 +96,11 @@ extension StoriesControllerImpl: StoriesController {
         }
     }
     
-    private func presentWallpaper(selectedType: WallpaperType) {
+    private func presentWallpaper(
+        selectedType: WallpaperType,
+        sourceURL: URL? = nil,
+        initialAttributes: [ImageAttributes]? = nil
+    ) {
         let imageCore = ImageCoreImpl()
         let imageCacheCore = ImageCacheCoreImpl(totalCostLimit: Constants.imageCacheLimit)
         let fileCore = FileCoreImpl()
@@ -105,7 +125,9 @@ extension StoriesControllerImpl: StoriesController {
                     imageCore: imageCore,
                     imageCacheCore: imageCacheCore
                 )
-            )
+            ),
+            sourceURL: sourceURL,
+            initialAttributes: initialAttributes
         )
         windowController.delegate = self
         windowController.window?.delegate = self
@@ -168,6 +190,10 @@ extension StoriesControllerImpl: WelcomeWindowControllerDelegate {
         welcomeWindowController?.close()
         welcomeWindowController = nil
         presentWallpaper(selectedType: type)
+    }
+
+    func welcomeWindowControllerOpenWasInteracted() {
+        (NSApp.delegate as? AppDelegate)?.applicationMenuOpen(nil)
     }
     
     func welcomeWindowControllerSupportWasInteracted() {

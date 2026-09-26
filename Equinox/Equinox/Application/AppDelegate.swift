@@ -27,6 +27,8 @@
 // THE SOFTWARE.
 
 import AppKit
+import EquinoxAssets
+import EquinoxCore
 
 final class AppDelegate: NSObject {
     let storiesController: StoriesController = StoriesControllerImpl()
@@ -49,6 +51,13 @@ extension AppDelegate: NSApplicationDelegate {
         dock.dockDelegate = self
         return dock
     }
+
+    func application(
+        _ sender: NSApplication,
+        openFile filename: String
+    ) -> Bool {
+        return openWallpaper(URL(fileURLWithPath: filename))
+    }
     
     // MARK: - Private
     
@@ -56,6 +65,22 @@ extension AppDelegate: NSApplicationDelegate {
         let applicationMenu = ApplicationMenu(title: NSApplication.appName)
         applicationMenu.applicationDelegate = self
         NSApplication.shared.mainMenu = applicationMenu
+    }
+
+    private func openWallpaper(_ url: URL) -> Bool {
+        do {
+            try storiesController.open(url)
+            return true
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = Localization.Menu.File.openErrorTitle
+            alert.informativeText = error is MetadataError
+                ? Localization.Menu.File.openErrorDescription
+                : error.localizedDescription
+            alert.alertStyle = .warning
+            alert.runModal()
+            return false
+        }
     }
 }
 
@@ -65,6 +90,32 @@ extension AppDelegate: ApplicationMenuDelegate {
     @objc
     func applicationMenuNew(_ sender: Any?) {
         storiesController.new()
+    }
+
+    func applicationMenuOpen(_ sender: Any?) {
+        let panel = NSOpenPanel()
+        panel.title = Localization.Menu.File.open
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        if #available(macOS 11.0, *) {
+            panel.allowedContentTypes = [.heic, .heif]
+        }
+        panel.begin { [weak self] result in
+            guard result == .OK, let url = panel.url else { return }
+            _ = self?.openWallpaper(url)
+        }
+    }
+
+    func applicationMenuRevert(_ sender: Any?) {
+        let controller = NSApp.keyWindow?.windowController
+            as? WallpaperWindowController
+        controller?.revert()
+    }
+
+    func applicationMenuCanRevert() -> Bool {
+        let controller = NSApp.keyWindow?.windowController
+            as? WallpaperWindowController
+        return controller?.canRevert == true
     }
 }
 

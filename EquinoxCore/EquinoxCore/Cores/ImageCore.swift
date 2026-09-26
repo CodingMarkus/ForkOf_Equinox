@@ -84,7 +84,8 @@ public final class ImageCoreImpl: ImageCore {
         let steps = attributes.count + 1
 
         for (index, attribute) in attributes.enumerated() {
-            let image = try readImage(from: attribute.url)
+            let image = try readImage(from: attribute.url,
+                                      index: attribute.sourceIndex)
 
             if index == 0 {
                 CGImageDestinationAddImageAndMetadata(destination, image, metadata, options)
@@ -106,17 +107,32 @@ public final class ImageCoreImpl: ImageCore {
     }
         
     public func resizeImage(image: NSImage, size: NSSize) -> NSImage {
-        let newImage = NSImage(size: size)
-        newImage.lockFocus()
-        NSGraphicsContext.current?.imageInterpolation = .high
-        image.draw(
-            in: .init(origin: .zero, size: size),
-            from: .init(origin: .zero, size: image.size),
-            operation: .copy,
-            fraction: 1
-        )
-        newImage.unlockFocus()
-        return newImage
+        var proposedRect = CGRect(origin: .zero, size: image.size)
+        guard
+            let cgImage = image.cgImage(
+                forProposedRect: &proposedRect,
+                context: nil,
+                hints: nil
+            ),
+            let context = CGContext(
+                data: nil,
+                width: max(Int(size.width.rounded()), 1),
+                height: max(Int(size.height.rounded()), 1),
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        else {
+            return image
+        }
+
+        context.interpolationQuality = .high
+        context.draw(cgImage, in: CGRect(origin: .zero, size: size))
+        guard let resizedImage = context.makeImage() else {
+            return image
+        }
+        return NSImage(cgImage: resizedImage, size: size)
     }
     
     public func getImageFormat(for url: URL) throws -> ImageFormatType {
@@ -170,7 +186,17 @@ public final class ImageCoreImpl: ImageCore {
     
     // MARK: - Private
     
-    private func readImage(from url: URL) throws -> CGImage {
+    private func readImage(from url: URL, index: Int?) throws -> CGImage {
+        if let index = index {
+            guard
+                let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                index < CGImageSourceGetCount(source),
+                let image = CGImageSourceCreateImageAtIndex(source, index, nil)
+            else {
+                throw ImageError.invalidImageFormat
+            }
+            return image
+        }
         guard let image = NSImage(contentsOf: url) else {
             throw ImageError.invalidImageFormat
         }

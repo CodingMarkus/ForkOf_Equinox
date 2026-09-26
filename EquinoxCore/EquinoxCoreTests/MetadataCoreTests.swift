@@ -208,6 +208,204 @@ class MetadataCoreTests: XCTestCase {
         XCTAssertNotNil(metadata?.latitude)
         XCTAssertNotNil(metadata?.createDate)
     }
+
+    func testReadSolarWallpaperAndExportItsFrames() throws {
+        let url = try XCTUnwrap(testBundle.url(forResource: "image",
+                                              withExtension: "heic"))
+        let attributes = [
+            ImageAttributes(url: url, index: 0, primary: true,
+                            imageType: .solar(altitude: 12, azimuth: 45),
+                            appearanceType: .light),
+            ImageAttributes(url: url, index: 1, primary: false,
+                            imageType: .solar(altitude: -8, azimuth: 270),
+                            appearanceType: .dark)
+        ]
+        let openedURL = try writeWallpaper(attributes)
+        defer { try? FileManager.default.removeItem(at: openedURL) }
+
+        let opened = try metadataCore.readWallpaper(at: openedURL)
+        XCTAssertEqual(opened.type, .solar)
+        XCTAssertEqual(opened.attributes.count, 2)
+        XCTAssertEqual(opened.attributes.map { $0.sourceIndex }, [0, 1])
+        XCTAssertEqual(opened.attributes.map { $0.primary }, [true, false])
+        XCTAssertEqual(opened.attributes[0].appearanceType, .light)
+        XCTAssertEqual(opened.attributes[1].appearanceType, .dark)
+        if case let .solar(altitude, azimuth) =
+            opened.attributes[1].imageType {
+            XCTAssertEqual(altitude, -8)
+            XCTAssertEqual(azimuth, 270)
+        } else {
+            XCTFail("Expected solar settings")
+        }
+
+        let metadata = try metadataCore.generate(from: opened.attributes)
+        let exported = try ImageCoreImpl().createImage(
+            from: opened.attributes,
+            metadata: metadata,
+            progressCallback: nil
+        )
+        let source = try XCTUnwrap(CGImageSourceCreateWithData(
+            exported as CFData,
+            nil
+        ))
+        XCTAssertEqual(CGImageSourceGetCount(source), 2)
+    }
+
+    func testReadTimeWallpaper() throws {
+        let url = try XCTUnwrap(testBundle.url(forResource: "image",
+                                              withExtension: "heic"))
+        let start = Calendar.current.startOfDay(for: Date())
+        let attributes = [
+            ImageAttributes(url: url, index: 0, primary: true,
+                            imageType: .time(date: start),
+                            appearanceType: nil),
+            ImageAttributes(url: url, index: 1, primary: false,
+                            imageType: .time(
+                                date: start.addingTimeInterval(3600)
+                            ),
+                            appearanceType: nil)
+        ]
+        let openedURL = try writeWallpaper(attributes)
+        defer { try? FileManager.default.removeItem(at: openedURL) }
+
+        let opened = try metadataCore.readWallpaper(at: openedURL)
+        XCTAssertEqual(opened.type, .time)
+        XCTAssertEqual(opened.attributes.map { $0.sourceIndex }, [0, 1])
+        if case let .time(date) = opened.attributes[1].imageType {
+            let hour = Calendar.current.component(.hour, from: date)
+            XCTAssertEqual(hour, 1)
+        } else {
+            XCTFail("Expected time settings")
+        }
+    }
+
+    func testReadTimeWallpaperWithSharedAppearanceFrame() throws {
+        let url = try XCTUnwrap(testBundle.url(forResource: "image",
+                                              withExtension: "heic"))
+        let start = Calendar.current.startOfDay(for: Date())
+        let attributes = (0..<5).map { index in
+            ImageAttributes(
+                url: url,
+                index: index,
+                primary: index == 0,
+                imageType: .time(
+                    date: start.addingTimeInterval(Double(index) * 3600)
+                ),
+                appearanceType: index == 0 ? .both : nil
+            )
+        }
+        let openedURL = try writeWallpaper(attributes)
+        defer { try? FileManager.default.removeItem(at: openedURL) }
+
+        let opened = try metadataCore.readWallpaper(at: openedURL)
+        XCTAssertEqual(opened.type, .time)
+        XCTAssertEqual(opened.attributes.count, 5)
+        XCTAssertEqual(opened.attributes[0].appearanceType, .both)
+        XCTAssertTrue(opened.attributes.dropFirst().allSatisfy {
+            $0.appearanceType == nil
+        })
+
+        let exportedURL = try writeWallpaper(opened.attributes)
+        defer { try? FileManager.default.removeItem(at: exportedURL) }
+        let exported = try metadataCore.readWallpaper(at: exportedURL)
+        XCTAssertEqual(exported.attributes[0].appearanceType, .both)
+    }
+
+    func testReadAppearanceWallpaper() throws {
+        let url = try XCTUnwrap(testBundle.url(forResource: "image",
+                                              withExtension: "heic"))
+        let attributes = [
+            ImageAttributes(url: url, index: 0, primary: true,
+                            imageType: .appearance, appearanceType: .dark),
+            ImageAttributes(url: url, index: 1, primary: false,
+                            imageType: .appearance, appearanceType: .light)
+        ]
+        let openedURL = try writeWallpaper(attributes)
+        defer { try? FileManager.default.removeItem(at: openedURL) }
+
+        let opened = try metadataCore.readWallpaper(at: openedURL)
+        XCTAssertEqual(opened.type, .appearance)
+        XCTAssertEqual(opened.attributes[0].appearanceType, .dark)
+        XCTAssertEqual(opened.attributes[1].appearanceType, .light)
+    }
+
+    func testRejectOrdinaryImage() throws {
+        let url = try XCTUnwrap(testBundle.url(forResource: "image",
+                                              withExtension: "heic"))
+        XCTAssertThrowsError(try metadataCore.readWallpaper(at: url))
+    }
+
+    func testRejectDuplicateFrameIndexes() throws {
+        let url = try XCTUnwrap(testBundle.url(forResource: "image",
+                                              withExtension: "heic"))
+        let attributes = [
+            ImageAttributes(url: url, index: 0, primary: true,
+                            imageType: .solar(altitude: 10, azimuth: 20),
+                            appearanceType: nil),
+            ImageAttributes(url: url, index: 0, primary: false,
+                            imageType: .solar(altitude: 30, azimuth: 40),
+                            appearanceType: nil)
+        ]
+        let openedURL = try writeWallpaper(attributes)
+        defer { try? FileManager.default.removeItem(at: openedURL) }
+
+        XCTAssertThrowsError(try metadataCore.readWallpaper(at: openedURL))
+    }
+
+    func testRejectMalformedDynamicMetadata() throws {
+        let sourceURL = try XCTUnwrap(testBundle.url(
+            forResource: "image",
+            withExtension: "heic"
+        ))
+        let metadata = CGImageMetadataCreateMutable()
+        let namespace = "http://ns.apple.com/namespace/1.0/" as CFString
+        let prefix = "apple_desktop" as CFString
+        XCTAssertTrue(CGImageMetadataRegisterNamespaceForPrefix(
+            metadata, namespace, prefix, nil
+        ))
+        let tag = try XCTUnwrap(CGImageMetadataTagCreate(
+            namespace, prefix, "solar" as CFString,
+            .string, "invalid" as CFString
+        ))
+        XCTAssertTrue(CGImageMetadataSetTagWithPath(
+            metadata, nil, "apple_desktop:solar" as CFString, tag
+        ))
+        let attributes = [ImageAttributes(
+            url: sourceURL,
+            index: 0,
+            primary: true,
+            imageType: .solar(altitude: 10, azimuth: 20),
+            appearanceType: nil
+        )]
+        let data = try ImageCoreImpl().createImage(
+            from: attributes,
+            metadata: metadata,
+            progressCallback: nil
+        )
+        let openedURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("heic")
+        try data.write(to: openedURL)
+        defer { try? FileManager.default.removeItem(at: openedURL) }
+
+        XCTAssertThrowsError(try metadataCore.readWallpaper(at: openedURL))
+    }
+
+    private func writeWallpaper(
+        _ attributes: [ImageAttributes]
+    ) throws -> URL {
+        let metadata = try metadataCore.generate(from: attributes)
+        let data = try ImageCoreImpl().createImage(
+            from: attributes,
+            metadata: metadata,
+            progressCallback: nil
+        )
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("heic")
+        try data.write(to: url)
+        return url
+    }
     
     private func getTestMetadata(key: String) -> String? {
         // swiftlint:disable:next force_unwrapping

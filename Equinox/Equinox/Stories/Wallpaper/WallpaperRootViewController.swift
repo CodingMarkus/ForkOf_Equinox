@@ -48,10 +48,12 @@ final class WallpaperRootViewController: ViewController {
     private let solarService: SolarService
     private let settingsService: SettingsService
     private let imageProvider: ImageProvider
+    private let initialAttributes: [ImageAttributes]?
 
     private lazy var contentView = RootContentView()
     private weak var navigationController: NavigationController?
     private weak var createViewController: WallpaperCreateViewController?
+    private weak var mainViewController: WallpaperMainViewController?
     private weak var tipViewController: TipViewController?
     private weak var setViewController: WallpaperSetViewController?
     
@@ -63,7 +65,8 @@ final class WallpaperRootViewController: ViewController {
         wallpaperService: WallpaperService,
         solarService: SolarService,
         settingsService: SettingsService,
-        imageProvider: ImageProvider
+        imageProvider: ImageProvider,
+        initialAttributes: [ImageAttributes]?
     ) {
         self.type = type
         self.fileService = fileService
@@ -71,6 +74,7 @@ final class WallpaperRootViewController: ViewController {
         self.solarService = solarService
         self.settingsService = settingsService
         self.imageProvider = imageProvider
+        self.initialAttributes = initialAttributes
         super.init()
     }
     
@@ -89,12 +93,25 @@ final class WallpaperRootViewController: ViewController {
 
     private func setup() {
         presentMainController()
-        presentTipControllerIfNeeded(animated: false)
+        if initialAttributes == nil {
+            presentTipControllerIfNeeded(animated: false)
+        }
     }
     
     // MARK: - Public
 
     weak var delegate: WallpaperRootViewControllerDelegate?
+
+    var canRevert: Bool {
+        return initialAttributes != nil
+            && createViewController == nil
+            && mainViewController?.canRevert == true
+    }
+
+    func revert() {
+        guard canRevert else { return }
+        mainViewController?.revert()
+    }
     
     public func presentTipController(firstPresent: Bool, animated: Bool) {
         guard tipViewController == nil else {
@@ -147,8 +164,10 @@ final class WallpaperRootViewController: ViewController {
             type: type,
             fileService: fileService,
             solarService: solarService,
-            imageProvider: imageProvider
+            imageProvider: imageProvider,
+            initialAttributes: initialAttributes
         )
+        mainViewController = controller
         controller.delegate = self
         let navigationController = NavigationController(rootViewController: controller)
         self.navigationController = navigationController
@@ -189,7 +208,8 @@ final class WallpaperRootViewController: ViewController {
             type: type,
             imageAttributes: imageAttributes,
             wallpaperService: wallpaperService,
-            imageProvider: imageProvider
+            imageProvider: imageProvider,
+            sourceURL: initialAttributes?.first?.url
         )
         createViewController = controller
         controller.delegate = self

@@ -36,8 +36,6 @@ import EquinoxUI
 protocol WallpaperGalleryViewControllerDelegate: AnyObject {
     func dataWasChanged()
     func openBrowseDialog()
-    func presentAppearancePopover(relativeTo view: NSView, selectedType: EquinoxUI.AppearanceType)
-    func closePopover()
     func notify(_ text: String)
 }
 
@@ -68,7 +66,6 @@ final class WallpaperGalleryViewController: ViewController {
         solarService: solarService,
         imageProvider: imageProvider
     )
-    private weak var mutatingModel: GalleryModel?
     
     private lazy var contentView: GalleryContentView = {
         let view = GalleryContentView()
@@ -128,10 +125,18 @@ final class WallpaperGalleryViewController: ViewController {
             altitudeText: Localization.Wallpaper.Gallery.altitude,
             altitudePlaceholder: Localization.Wallpaper.Gallery.altitudeValue,
             timeText: Localization.Wallpaper.Gallery.time,
-            appearanceTooltipTitle: Localization.Wallpaper.Gallery.tooltipAppearanceTitle,
-            appearanceTooltipDescription: Localization.Wallpaper.Gallery.tooltipAppearanceDescription,
-            primaryTooltipTitle: Localization.Wallpaper.Gallery.tooltipPrimaryTitle,
-            primaryTooltipDescription: Localization.Wallpaper.Gallery.tooltipPrimaryDescription
+            lightAppearanceTooltipTitle:
+                Localization.Wallpaper.Gallery.tooltipLightTitle,
+            lightAppearanceTooltipDescription:
+                Localization.Wallpaper.Gallery.tooltipLightDescription,
+            darkAppearanceTooltipTitle:
+                Localization.Wallpaper.Gallery.tooltipDarkTitle,
+            darkAppearanceTooltipDescription:
+                Localization.Wallpaper.Gallery.tooltipDarkDescription,
+            previewTooltipTitle:
+                Localization.Wallpaper.Gallery.tooltipPreviewTitle,
+            previewTooltipDescription:
+                Localization.Wallpaper.Gallery.tooltipPreviewDescription
         )
     }
     
@@ -146,6 +151,43 @@ final class WallpaperGalleryViewController: ViewController {
     var data: GalleryData {
         return dataController.data
     }
+
+    func replace(with attributes: [ImageAttributes]) {
+        let models = attributes.enumerated().map {
+            order, attribute -> GalleryModel in
+            let appearance: EquinoxUI.AppearanceType
+            switch attribute.appearanceType {
+            case .light: appearance = .light
+            case .dark: appearance = .dark
+            case .both: appearance = .both
+            case nil: appearance = .all
+            }
+            var altitude: Double?
+            var azimuth: Double?
+            var time: Date?
+            switch attribute.imageType {
+            case .solar(let frameAltitude, let frameAzimuth):
+                altitude = frameAltitude
+                azimuth = frameAzimuth
+            case .time(let date):
+                time = date
+            case .appearance:
+                break
+            }
+            return GalleryModel(number: order + 1,
+                                url: attribute.url,
+                                appearance: appearance,
+                                primary: attribute.primary,
+                                azimuth: azimuth,
+                                altitude: altitude,
+                                time: time,
+                                sourceIndex: attribute.sourceIndex)
+        }
+        dataController.replace(with: models)
+        contentView.reloadCollection(dataController.data, type: .hard)
+        refreshState()
+        delegate?.dataWasChanged()
+    }
     
     weak var delegate: WallpaperGalleryViewControllerDelegate?
     
@@ -158,47 +200,6 @@ final class WallpaperGalleryViewController: ViewController {
         }
     }
 
-    func didSelectAppearance(_ model: AppearanceContentView.Model) {
-        if let findedModel = dataController.data.items.first(where: { $0.appearance == model.appearanceType }),
-           mutatingModel?.number != findedModel.number {
-            let appearanceType: EquinoxUI.AppearanceType
-
-            switch type {
-            case .solar, .time:
-                appearanceType = .all
-
-            case .appearance:
-                switch model.appearanceType {
-                case .light:
-                    appearanceType = .dark
-
-                case .all, .dark:
-                    appearanceType = .light
-                }
-            }
-            
-            findedModel.appearance = appearanceType
-            contentView.updateItem(at: findedModel.number - 1, model: findedModel, animated: true)
-        }
-
-        if let mutatingModel = mutatingModel {
-            switch model.appearanceType {
-            case .all:
-                mutatingModel.appearance = .all
-
-            case .dark:
-                mutatingModel.appearance = .dark
-
-            case .light:
-                mutatingModel.appearance = .light
-            }
-
-            contentView.updateItem(at: mutatingModel.number - 1, model: mutatingModel, animated: true)
-        }
-        
-        contentView.reloadCollection(dataController.data, type: .soft)
-    }
-    
     func didBrowse(_ urls: [URL]) {
         let insertIndexPath = IndexPath(item: dataController.data.items.count, section: 0)
         processExternalCollectionItems(urls, insertIndexPath: insertIndexPath)
@@ -342,6 +343,52 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         }
     }
 
+    private func updateAppearance(
+        _ selected: EquinoxUI.AppearanceType,
+        for model: GalleryModel
+    ) {
+        let hadLight = model.appearance == .light || model.appearance == .both
+        let hadDark = model.appearance == .dark || model.appearance == .both
+        let addsLight = !hadLight
+            && (selected == .light || selected == .both)
+        let addsDark = !hadDark
+            && (selected == .dark || selected == .both)
+
+        for other in dataController.data.items where other !== model {
+            let hadLight = other.appearance == .light
+                || other.appearance == .both
+            let hadDark = other.appearance == .dark
+                || other.appearance == .both
+            let keepsLight = hadLight && !addsLight
+            let keepsDark = hadDark && !addsDark
+
+            let updated: EquinoxUI.AppearanceType
+            switch (keepsLight, keepsDark) {
+            case (false, false): updated = .all
+            case (true, false): updated = .light
+            case (false, true): updated = .dark
+            case (true, true): updated = .both
+            }
+
+            if other.appearance != updated {
+                other.appearance = updated
+                contentView.updateItem(
+                    at: other.number - 1,
+                    model: other,
+                    animated: true
+                )
+            }
+        }
+
+        model.appearance = selected
+        contentView.updateItem(
+            at: model.number - 1,
+            model: model,
+            animated: true
+        )
+        contentView.reloadCollection(dataController.data, type: .soft)
+    }
+
     func refreshCollectionData(_ index: Int, field: GalleryModel.MutateField, sender: Any?) {
         guard dataController.data.items.indices.contains(index) else {
             return
@@ -350,12 +397,9 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         let model = dataController.data.items[index]
 
         switch field {
-        case .appearance:
-            guard let sender = sender as? NSView else {
-                return
-            }
-            mutatingModel = model
-            delegate?.presentAppearancePopover(relativeTo: sender, selectedType: model.appearance)
+        case .appearance(let selected):
+            updateAppearance(selected, for: model)
+            delegate?.dataWasChanged()
 
         case .primary:
             if let primaryIndex = dataController.data.items.firstIndex(where: { $0.primary }) {
@@ -376,17 +420,21 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         case .time(let time):
             model.time = time
         }
+        if case .appearance = field { return }
+        delegate?.dataWasChanged()
     }
     
-    func loadImage(url: URL, completion: @escaping (NSImage?) -> Void) {
+    func loadImage(
+        model: GalleryModel,
+        completion: @escaping (NSImage?) -> Void
+    ) {
         let resizeMode = ImageResizeMode.resized(size: Constants.thumbnailSize, respectAspect: true)
-        imageProvider.loadImage(url: url, resizeMode: resizeMode, completion: completion)
+        imageProvider.loadImage(url: model.url,
+                                sourceIndex: model.sourceIndex,
+                                resizeMode: resizeMode,
+                                completion: completion)
     }
 
-    func collectionDidScroll() {
-        delegate?.closePopover()
-    }
-    
     func collectionMenuNeedsUpdate(_ menu: NSMenu) {
         let count = contentView.selectedIndexPaths.count
         

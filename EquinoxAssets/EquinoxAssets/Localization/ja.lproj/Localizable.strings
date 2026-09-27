@@ -43,7 +43,7 @@
 "welcome.version" = "バージョン %@";
 "welcome.github" = "GitHub";
 "welcome.support" = "Equinoxをサポート";
-"welcome.open.existing" = "または既存の壁紙を開く...";
+"welcome.open.existing" = "または編集...";
 "welcome.choose.type" = "タイプを選択";
 "welcome.choose.type.description" = "壁紙に合ったタイプを選択してください";
 "welcome.types.solar" = "ソーラー";

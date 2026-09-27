@@ -41,7 +41,7 @@
 "welcome.version" = "Version %@";
 "welcome.github" = "GitHub";
 "welcome.support" = "Equinox unterstützen";
-"welcome.open.existing" = "Oder ein vorhandenes Hintergrundbild öffnen...";
+"welcome.open.existing" = "Oder Bestehendes bearbeiten...";
 "welcome.choose.type" = "Wähle den Typ";
 "welcome.choose.type.description" = "Wähle die Art von Hintergrundbild, die du erstellen willst";
 "welcome.types.solar" = "Sonnenabhängig";

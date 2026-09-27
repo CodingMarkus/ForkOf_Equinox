@@ -43,7 +43,7 @@
 "welcome.version" = "버전 %@";
 "welcome.github" = "Github";
 "welcome.support" = "Equinox 지원하기";
-"welcome.open.existing" = "또는 기존 배경화면 열기...";
+"welcome.open.existing" = "또는 편집...";
 "welcome.choose.type" = "유형 선택";
 "welcome.choose.type.description" = "만들고 싶은 배경화면의 유형을 선택하세요";
 "welcome.types.solar" = "태양";

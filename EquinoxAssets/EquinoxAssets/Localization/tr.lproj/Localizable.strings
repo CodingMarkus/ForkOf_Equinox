@@ -43,7 +43,7 @@
 "welcome.version" = "Versiyon %@";
 "welcome.github" = "Github";
 "welcome.support" = "Equinox'u Destekle";
-"welcome.open.existing" = "Veya mevcut bir duvar kağıdını aç...";
+"welcome.open.existing" = "Veya düzenle...";
 "welcome.choose.type" = "Tür Seçin";
 "welcome.choose.type.description" = "Duvar kağıdınız için uygun bir tür seçin";
 "welcome.types.solar" = "Güneş";

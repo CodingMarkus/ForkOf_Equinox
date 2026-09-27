@@ -43,7 +43,7 @@
 "welcome.version" = "Versión %@";
 "welcome.github" = "GitHub";
 "welcome.support" = "Apoyar Equinox";
-"welcome.open.existing" = "O abre un fondo de pantalla existente...";
+"welcome.open.existing" = "O editar...";
 "welcome.choose.type" = "Elegir tipo";
 "welcome.choose.type.description" = "Seleccione un tipo adecuado para su fondo de pantalla";
 "welcome.types.solar" = "Solar";

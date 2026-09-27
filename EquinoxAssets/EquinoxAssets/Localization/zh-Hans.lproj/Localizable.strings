@@ -43,7 +43,7 @@
 "welcome.version" = "版本 %@";
 "welcome.github" = "Github";
 "welcome.support" = "支持 Equinox";
-"welcome.open.existing" = "或者打开现有墙纸...";
+"welcome.open.existing" = "或者编辑...";
 "welcome.choose.type" = "选择类型";
 "welcome.choose.type.description" = "选择最适合你的墙纸类型";
 "welcome.types.solar" = "日照";

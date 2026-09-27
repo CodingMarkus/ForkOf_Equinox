@@ -43,7 +43,7 @@
 "welcome.version" = "Version %@";
 "welcome.github" = "GitHub";
 "welcome.support" = "Support Equinox";
-"welcome.open.existing" = "Or open existing...";
+"welcome.open.existing" = "Or edit existing...";
 "welcome.choose.type" = "Choose a type";
 "welcome.choose.type.description" = "Select the type that best fits your wallpaper";
 "welcome.types.solar" = "Solar";

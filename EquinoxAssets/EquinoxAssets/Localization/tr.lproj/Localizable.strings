@@ -65,6 +65,7 @@
 "wallpaper.gallery.drag.supplementary" = "Dosyalar png, jpeg, tiff veya heif formatında olmalıdır.";
 "wallpaper.gallery.or" = "veya";
 "wallpaper.gallery.browse" = "Gözat";
+"wallpaper.gallery.export" = "Görseli dışa aktar…";
 "wallpaper.gallery.azimuth" = "Güneş Açısı:";
 "wallpaper.gallery.azimuth.value" = "Değer";
 "wallpaper.gallery.altitude" = "Rakım:";

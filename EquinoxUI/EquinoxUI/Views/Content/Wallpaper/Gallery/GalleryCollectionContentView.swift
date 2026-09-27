@@ -296,6 +296,17 @@ public final class GalleryCollectionContentView: View {
             imageView.image = image
         }
     }
+
+    public var draggingImageFrame: NSRect {
+        let frame = imageView.frame
+        guard isFlipped else { return frame }
+        return NSRect(
+            x: frame.minX,
+            y: bounds.height - frame.maxY,
+            width: frame.width,
+            height: frame.height
+        )
+    }
     
     public func setAppearanceType(_ appearanceType: AppearanceType, animated: Bool) {
         buttonsView.setAppearanceType(appearanceType, animated: animated)

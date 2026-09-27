@@ -32,6 +32,7 @@ enum HEIFMuxer {
 	}
 
 	private struct ImageItem {
+		let type: String
 		let bytes: Data
 		let properties: [Property]
 	}
@@ -65,7 +66,28 @@ enum HEIFMuxer {
 		try? readPrimaryImage(data).bytes
 	}
 
+	static func extractImage(in data: Data, at index: Int) -> Data? {
+		guard index >= 0 else { return nil }
+		do {
+			if let grid = try readGridFrame(data, at: index) {
+				return try write(grid, xmp: nil,
+								 gridTileCount: grid.count - 1)
+			}
+			let image = try readImage(data, at: index)
+			return try write([image], xmp: nil)
+		} catch {
+			return nil
+		}
+	}
+
 	private static func readPrimaryImage(_ data: Data) throws -> ImageItem {
+		try readImage(data, at: nil)
+	}
+
+	private static func readImage(
+		_ data: Data,
+		at index: Int?
+	) throws -> ImageItem {
 		let topLevel = try boxes(in: data, range: 0..<data.count)
 		guard let ftyp = topLevel.first,
 				fourCC(ftyp.type) == "ftyp",
@@ -81,7 +103,10 @@ enum HEIFMuxer {
 			throw MuxError.invalidFile
 		}
 
-		let children = try boxes(in: data, range: (meta.payloadStart + 4)..<meta.end)
+		let children = try boxes(
+			in: data,
+			range: (meta.payloadStart + 4)..<meta.end
+		)
 		guard let primaryBox = children.first(where: {
 			fourCC($0.type) == "pitm"
 		}), let infoBox = children.first(where: {
@@ -93,7 +118,18 @@ enum HEIFMuxer {
 		}) else { throw MuxError.invalidFile }
 
 		let primaryID = try primaryItemID(data, box: primaryBox)
-		let itemType = try itemType(data, box: infoBox, itemID: primaryID)
+		let itemID: UInt32
+		if let index = index {
+			let ids = try imageItemIDs(data, box: infoBox,
+										 type: "hvc1")
+			guard ids.indices.contains(index) else {
+				throw MuxError.invalidFile
+			}
+			itemID = ids[index]
+		} else {
+			itemID = primaryID
+		}
+		let itemType = try itemType(data, box: infoBox, itemID: itemID)
 		guard itemType == "hvc1" else { throw MuxError.unsupportedFile }
 
 		if let referencesBox = children.first(where: {
@@ -101,7 +137,7 @@ enum HEIFMuxer {
 		}), try hasUnsupportedReferences(
 			data,
 			box: referencesBox,
-			primaryID: primaryID
+			primaryID: itemID
 		) {
 			throw MuxError.unsupportedFile
 		}
@@ -109,12 +145,12 @@ enum HEIFMuxer {
 		let payload = try itemPayload(
 			data,
 			box: locationBox,
-			itemID: primaryID
+			itemID: itemID
 		)
 		let properties = try itemProperties(
 			data,
 			box: propertiesBox,
-			itemID: primaryID
+			itemID: itemID
 		)
 		guard properties.contains(where: {
 			fourCC(boxType($0.box)) == "hvcC"
@@ -122,37 +158,144 @@ enum HEIFMuxer {
 			fourCC(boxType($0.box)) == "ispe"
 		}) else { throw MuxError.unsupportedFile }
 
-		return ImageItem(bytes: payload, properties: properties)
+		return ImageItem(type: "hvc1", bytes: payload,
+						 properties: properties)
 	}
 
-	private static func write(_ images: [ImageItem], xmp: Data) throws -> Data {
+	private static func readGridFrame(
+		_ data: Data,
+		at index: Int
+	) throws -> [ImageItem]? {
+		let topLevel = try boxes(in: data, range: 0..<data.count)
+		guard let ftyp = topLevel.first,
+				fourCC(ftyp.type) == "ftyp",
+				let meta = topLevel.first(where: {
+					fourCC($0.type) == "meta"
+				}), meta.end - meta.payloadStart >= 4 else {
+			throw MuxError.invalidFile
+		}
+		let children = try boxes(in: data,
+								 range: (meta.payloadStart + 4)..<meta.end)
+		guard let info = children.first(where: {
+			fourCC($0.type) == "iinf"
+		}), let locations = children.first(where: {
+			fourCC($0.type) == "iloc"
+		}), let properties = children.first(where: {
+			fourCC($0.type) == "iprp"
+		}) else { throw MuxError.invalidFile }
+		let gridIDs = try imageItemIDs(data, box: info, type: "grid")
+		guard !gridIDs.isEmpty else { return nil }
+		guard gridIDs.indices.contains(index),
+				let references = children.first(where: {
+					fourCC($0.type) == "iref"
+				}) else { throw MuxError.invalidFile }
+		let tiles = try derivedItemIDs(data, box: references,
+										from: gridIDs[index])
+		guard !tiles.isEmpty,
+				tiles.count < Int(UInt16.max),
+				Set(tiles).count == tiles.count else {
+			throw MuxError.unsupportedFile
+		}
+		let ids = [gridIDs[index]] + tiles
+		let idatStart = children.first(where: {
+			fourCC($0.type) == "idat"
+		})?.payloadStart
+		return try ids.enumerated().map { order, id in
+			let type = try itemType(data, box: info, itemID: id)
+			guard type == (order == 0 ? "grid" : "hvc1") else {
+				throw MuxError.unsupportedFile
+			}
+			let bytes = try itemPayload(data, box: locations,
+										itemID: id, idatStart: idatStart)
+			let itemProperties = try itemProperties(
+				data,
+				box: properties,
+				itemID: id
+			)
+			let required = order == 0 ? ["ispe"] : ["hvcC", "ispe"]
+			guard required.allSatisfy({ requiredType in
+				itemProperties.contains(where: {
+					fourCC(boxType($0.box)) == requiredType
+				})
+			}) else { throw MuxError.unsupportedFile }
+			return ImageItem(type: type, bytes: bytes,
+							 properties: itemProperties)
+		}
+	}
+
+	private static func derivedItemIDs(
+		_ data: Data,
+		box: Box,
+		from itemID: UInt32
+	) throws -> [UInt32] {
+		guard box.end - box.payloadStart >= 4 else {
+			throw MuxError.invalidFile
+		}
+		let version = data[box.payloadStart]
+		guard version <= 1 else { throw MuxError.unsupportedFile }
+		let references = try boxes(in: data,
+								   range: (box.payloadStart + 4)..<box.end)
+		var targets: [UInt32] = []
+		for reference in references where fourCC(reference.type) == "dimg" {
+			let cursor = Cursor(data: data,
+									offset: reference.payloadStart,
+									end: reference.end)
+			let from = version == 0
+				? UInt32(try cursor.read16()) : try cursor.read32()
+			let count = try cursor.read16()
+			for _ in 0..<count {
+				let target = version == 0
+					? UInt32(try cursor.read16()) : try cursor.read32()
+				if from == itemID { targets.append(target) }
+			}
+		}
+		return targets
+	}
+
+	private static func write(
+		_ images: [ImageItem],
+		xmp: Data?,
+		gridTileCount: Int = 0
+	) throws -> Data {
 		guard images.count < Int(UInt16.max),
-				xmp.count <= Int(UInt32.max) - 8,
+				gridTileCount < Int(UInt16.max),
+				(xmp?.count ?? 0) <= Int(UInt32.max) - 8,
 				images.allSatisfy({ $0.properties.count <= Int(UInt8.max) })
 		else { throw MuxError.overflow }
 
-		var items = images.map {
-			(type: "hvc1", name: "", contentType: nil as String?,
-			 data: $0.bytes, properties: $0.properties)
+		var items = images.enumerated().map { index, image in
+			(type: image.type, name: "", contentType: nil as String?,
+			 data: image.bytes, properties: image.properties,
+			 hidden: gridTileCount > 0 && index > 0)
 		}
 		let primaryID: UInt32 = 1
 		let metadataID = UInt16(images.count + 1)
-		items.append((type: "mime", name: "", contentType: "application/rdf+xml",
-					  data: xmp, properties: []))
+		if let xmp = xmp {
+			items.append((type: "mime", name: "",
+						  contentType: "application/rdf+xml",
+						  data: xmp, properties: [], hidden: false))
+		}
 
 		var propertyBoxes: [Data] = []
+		var propertyIndices: [Data: UInt16] = [:]
 		var associations: [[(UInt16, Bool)]] = []
 		for item in items {
 			var itemAssociations: [(UInt16, Bool)] = []
 			for property in item.properties {
-				propertyBoxes.append(property.box)
-				itemAssociations.append((UInt16(propertyBoxes.count),
-										 property.essential))
+				let propertyIndex: UInt16
+				if let existingIndex = propertyIndices[property.box] {
+					propertyIndex = existingIndex
+				} else {
+					guard propertyBoxes.count < 0x7fff else {
+						throw MuxError.overflow
+					}
+					propertyBoxes.append(property.box)
+					propertyIndex = UInt16(propertyBoxes.count)
+					propertyIndices[property.box] = propertyIndex
+				}
+				itemAssociations.append((propertyIndex, property.essential))
 			}
 			associations.append(itemAssociations)
-		}
-		guard propertyBoxes.count <= 0x7fff else {
-			throw MuxError.overflow
 		}
 
 		let largePropertyIndices = propertyBoxes.count > 127
@@ -196,22 +339,39 @@ enum HEIFMuxer {
 				body.append(Data(contentType.utf8))
 				body.append(0)
 			}
-			itemInfoBody.append(fullBox("infe", version: 2, flags: 0,
+			itemInfoBody.append(fullBox("infe", version: 2,
+										 flags: item.hidden ? 1 : 0,
 										 body: body))
 		}
 		let itemInfo = fullBox("iinf", version: 0, flags: 0,
 							   body: itemInfoBody)
 
-		var referenceBody = be16(metadataID)
-		referenceBody.append(be16(1))
-		referenceBody.append(be16(UInt16(primaryID)))
-		let references = fullBox("iref", version: 0, flags: 0,
-								 body: box("cdsc", referenceBody))
+		var references = Data()
+		if gridTileCount > 0 {
+			var referenceBody = be16(UInt16(primaryID))
+			referenceBody.append(be16(UInt16(gridTileCount)))
+			for index in 0..<gridTileCount {
+				referenceBody.append(be16(UInt16(index + 2)))
+			}
+			references.append(box("dimg", referenceBody))
+		}
+		if xmp != nil {
+			var referenceBody = be16(metadataID)
+			referenceBody.append(be16(1))
+			referenceBody.append(be16(UInt16(primaryID)))
+			references.append(box("cdsc", referenceBody))
+		}
+		if !references.isEmpty {
+			references = fullBox("iref", version: 0,
+								 flags: 0, body: references)
+		}
 
-		var mediaData = xmp
-		var spans: [(UInt16, UInt64, UInt64)] = [
-			(metadataID, 0, UInt64(xmp.count))
-		]
+		var mediaData = Data()
+		var spans: [(UInt16, UInt64, UInt64)] = []
+		if let xmp = xmp {
+			mediaData = xmp
+			spans.append((metadataID, 0, UInt64(xmp.count)))
+		}
 		for (index, image) in images.enumerated() {
 			spans.append((UInt16(index + 1), UInt64(mediaData.count),
 						  UInt64(image.bytes.count)))
@@ -227,7 +387,7 @@ enum HEIFMuxer {
 			body.append(primary)
 			body.append(locations)
 			body.append(itemInfo)
-			body.append(references)
+			if !references.isEmpty { body.append(references) }
 			body.append(iprp)
 			return box("meta", body)
 		}
@@ -266,6 +426,59 @@ enum HEIFMuxer {
 		if version == 0 { return UInt32(try read16(data, at: start)) }
 		if version == 1 { return try read32(data, at: start) }
 		throw MuxError.unsupportedFile
+	}
+
+	private static func imageItemIDs(
+		_ data: Data,
+		box: Box,
+		type: String
+	) throws -> [UInt32] {
+		guard box.end - box.payloadStart >= 6 else {
+			throw MuxError.invalidFile
+		}
+		let version = data[box.payloadStart]
+		let countStart = box.payloadStart + 4
+		let count: Int
+		let entryStart: Int
+		if version == 0 {
+			count = Int(try read16(data, at: countStart))
+			entryStart = countStart + 2
+		} else if version == 1 {
+			count = Int(try read32(data, at: countStart))
+			entryStart = countStart + 4
+		} else {
+			throw MuxError.unsupportedFile
+		}
+		let entries = try boxes(in: data, range: entryStart..<box.end)
+		guard entries.count == count else { throw MuxError.invalidFile }
+		var ids: [UInt32] = []
+		for entry in entries where fourCC(entry.type) == "infe" {
+			guard entry.end - entry.payloadStart >= 4 else {
+				throw MuxError.invalidFile
+			}
+			let entryVersion = data[entry.payloadStart]
+			let start = entry.payloadStart + 4
+			let id: UInt32
+			let typeOffset: Int
+			if entryVersion == 2 {
+				guard entry.end - entry.payloadStart >= 12 else {
+					throw MuxError.invalidFile
+				}
+				id = UInt32(try read16(data, at: start))
+				typeOffset = start + 4
+			} else if entryVersion == 3 {
+				guard entry.end - entry.payloadStart >= 14 else {
+					throw MuxError.invalidFile
+				}
+				id = try read32(data, at: start)
+				typeOffset = start + 6
+			} else {
+				continue
+			}
+			let itemType = fourCC(data[typeOffset..<(typeOffset + 4)])
+			if itemType == type { ids.append(id) }
+		}
+		return ids
 	}
 
 	private static func itemType(
@@ -319,7 +532,8 @@ enum HEIFMuxer {
 	private static func itemPayload(
 		_ data: Data,
 		box: Box,
-		itemID: UInt32
+		itemID: UInt32,
+		idatStart: Int? = nil
 	) throws -> Data {
 		guard box.end - box.payloadStart >= 8 else {
 			throw MuxError.invalidFile
@@ -361,14 +575,23 @@ enum HEIFMuxer {
 				extents.append((try cursor.readUInt(size: offsetSize),
 								try cursor.readUInt(size: lengthSize)))
 			}
-			guard id != itemID || method == 0 && dataReference == 0 else {
+			let supportedMethod = method == 0
+				|| method == 1 && idatStart != nil
+			guard id != itemID || supportedMethod && dataReference == 0 else {
 				if id == itemID { throw MuxError.unsupportedFile }
 				continue
 			}
 			if id == itemID {
 				var result = Data()
 				for (offset, length) in extents {
-					let start64 = base.addingReportingOverflow(offset)
+					let position = base.addingReportingOverflow(offset)
+					guard !position.overflow else {
+						throw MuxError.invalidFile
+					}
+					let start64 = position.partialValue
+						.addingReportingOverflow(UInt64(
+							method == 1 ? idatStart ?? 0 : 0
+						))
 					guard !start64.overflow,
 						  start64.partialValue <= UInt64(data.count) else {
 						throw MuxError.invalidFile

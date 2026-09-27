@@ -65,6 +65,7 @@
 "wallpaper.gallery.drag.supplementary" = "檔案格式應為 png、jpeg、tiff，或 heif。";
 "wallpaper.gallery.or" = "或";
 "wallpaper.gallery.browse" = "瀏覽";
+"wallpaper.gallery.export" = "匯出影像…";
 "wallpaper.gallery.azimuth" = "方位角：";
 "wallpaper.gallery.azimuth.value" = "數值";
 "wallpaper.gallery.altitude" = "海拔：";

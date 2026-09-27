@@ -65,6 +65,7 @@
 "wallpaper.gallery.drag.supplementary" = "支持这些格式：png, jpeg, tiff, heif.";
 "wallpaper.gallery.or" = "或者";
 "wallpaper.gallery.browse" = "浏览文件";
+"wallpaper.gallery.export" = "导出图像…";
 "wallpaper.gallery.azimuth" = "方位角:";
 "wallpaper.gallery.azimuth.value" = "值";
 "wallpaper.gallery.altitude" = "高度角:";

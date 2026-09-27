@@ -54,6 +54,20 @@ public final class GalleryInternalCollectionView: NSCollectionView {
         internalDelegate?.didDraggingExited(sender)
     }
 
+    public override func draggingSession(
+        _ session: NSDraggingSession,
+        sourceOperationMaskFor context: NSDraggingContext
+    ) -> NSDragOperation {
+        switch context {
+        case .outsideApplication:
+            return .copy
+        case .withinApplication:
+            return .move
+        @unknown default:
+            return []
+        }
+    }
+
     public override func deleteBackward(_ sender: Any?) {
         internalDelegate?.didDeleteBackward(sender)
     }

@@ -65,6 +65,7 @@
 "wallpaper.gallery.drag.supplementary" = "Files should be PNG, JPEG, TIFF, or HEIC.";
 "wallpaper.gallery.or" = "or";
 "wallpaper.gallery.browse" = "Browse";
+"wallpaper.gallery.export" = "Export image…";
 "wallpaper.gallery.azimuth" = "Azimuth:";
 "wallpaper.gallery.azimuth.value" = "Value";
 "wallpaper.gallery.altitude" = "Altitude:";

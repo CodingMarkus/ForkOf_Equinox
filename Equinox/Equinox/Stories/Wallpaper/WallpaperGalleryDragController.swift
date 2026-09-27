@@ -29,6 +29,7 @@
 import AppKit
 import EquinoxCore
 import EquinoxUI
+import UniformTypeIdentifiers
 
 // MARK: - Protocols
 
@@ -45,6 +46,7 @@ protocol WallpaperGalleryDragControllerDelegate: AnyObject {
         completion: @escaping (NSImage?) -> Void
     )
     func collectionMenuNeedsUpdate(_ menu: NSMenu)
+    func filePromiseDetails(at indexPath: IndexPath) -> (URL, Int?, String)?
 }
 
 // MARK: - Enums, Structs
@@ -73,13 +75,16 @@ extension WallpaperGalleryDragController {
 
 // MARK: - Class
 
-final class WallpaperGalleryDragController {
+final class WallpaperGalleryDragController: NSObject {
     private let type: WallpaperType
+    private var filePromiseIndexPaths: [IndexPath] = []
+    private let filePromiseQueue = OperationQueue()
     
     // MARK: - Initializer
     
     init(type: WallpaperType) {
         self.type = type
+        super.init()
     }
     
     // MARK: - Public
@@ -103,7 +108,14 @@ final class WallpaperGalleryDragController {
             return indexPath
         }
 
-        delegate?.processInternalCollectionItems(indexPaths, insertIndexPath: insertIndexPath)
+        let resolvedIndexPaths = indexPaths.isEmpty
+            ? filePromiseIndexPaths
+            : indexPaths
+        filePromiseIndexPaths = []
+        delegate?.processInternalCollectionItems(
+            resolvedIndexPaths,
+            insertIndexPath: insertIndexPath
+        )
 
         return true
     }
@@ -136,6 +148,27 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
     }
 
     func pasteboardWriter(for collectionView: NSCollectionView, indexPath: IndexPath) -> NSPasteboardWriting? {
+        if let (url, sourceIndex, filename) = delegate?.filePromiseDetails(
+            at: indexPath
+        ) {
+            if !filePromiseIndexPaths.contains(indexPath) {
+                filePromiseIndexPaths.append(indexPath)
+            }
+            let details = WallpaperFramePromiseDetails(
+                sourceURL: url,
+                sourceIndex: sourceIndex,
+                filename: filename
+            )
+            let provider = NSFilePromiseProvider(
+                fileType: UTType(
+                    filenameExtension: URL(fileURLWithPath: filename)
+                        .pathExtension
+                )?.identifier ?? UTType.data.identifier,
+                delegate: self
+            )
+            provider.userInfo = details
+            return provider
+        }
         guard let data = try? NSKeyedArchiver.archivedData(withRootObject: indexPath as NSIndexPath, requiringSecureCoding: true) else {
             return nil
         }
@@ -215,6 +248,61 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         delegate?.collectionMenuNeedsUpdate(menu)
+    }
+}
+
+private final class WallpaperFramePromiseDetails: NSObject {
+    let sourceURL: URL
+    let sourceIndex: Int?
+    let filename: String
+
+    init(sourceURL: URL, sourceIndex: Int?, filename: String) {
+        self.sourceURL = sourceURL
+        self.sourceIndex = sourceIndex
+        self.filename = filename
+        super.init()
+    }
+}
+
+extension WallpaperGalleryDragController: NSFilePromiseProviderDelegate {
+    func filePromiseProvider(
+        _ filePromiseProvider: NSFilePromiseProvider,
+        fileNameForType fileType: String
+    ) -> String {
+        return (filePromiseProvider.userInfo as? WallpaperFramePromiseDetails)?
+            .filename ?? "image.heic"
+    }
+
+    func operationQueue(for filePromiseProvider: NSFilePromiseProvider)
+        -> OperationQueue {
+        return filePromiseQueue
+    }
+
+    func filePromiseProvider(
+        _ filePromiseProvider: NSFilePromiseProvider,
+        writePromiseTo url: URL,
+        completionHandler: @escaping (Error?) -> Void
+    ) {
+        do {
+            guard let details = filePromiseProvider.userInfo
+                    as? WallpaperFramePromiseDetails else {
+                throw ImageError.invalidImageFormat
+            }
+            let sourceData = try Data(contentsOf: details.sourceURL)
+            let output: Data
+            if let sourceIndex = details.sourceIndex {
+                output = try ImageCoreImpl().extractHEICFrame(
+                    from: sourceData,
+                    at: sourceIndex
+                )
+            } else {
+                output = sourceData
+            }
+            try output.write(to: url)
+            completionHandler(nil)
+        } catch {
+            completionHandler(error)
+        }
     }
 }
 

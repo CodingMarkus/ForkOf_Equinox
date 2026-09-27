@@ -30,6 +30,7 @@ import AppKit
 import EquinoxAssets
 import EquinoxCore
 import EquinoxUI
+import UniformTypeIdentifiers
 
 // MARK: - Protocols
 
@@ -231,11 +232,69 @@ final class WallpaperGalleryViewController: ViewController {
     func collectionMenuDeleteItems(_ sender: Any) {
         deleteCollectionItems()
     }
+
+    @objc
+    func collectionMenuExportImage(_ sender: Any) {
+        guard
+            contentView.selectedIndexPaths.count == 1,
+            let indexPath = contentView.selectedIndexPaths.first,
+            let (sourceURL, sourceIndex, filename) = filePromiseDetails(
+                at: indexPath
+            ),
+            let window = view.window
+        else {
+            return
+        }
+
+        let savePanel = NSSavePanel()
+        savePanel.canCreateDirectories = true
+        savePanel.nameFieldStringValue = filename
+        savePanel.canSelectHiddenExtension = true
+        savePanel.isExtensionHidden = false
+        let fileExtension = URL(fileURLWithPath: filename).pathExtension
+        savePanel.allowedContentTypes = [
+            UTType(filenameExtension: fileExtension) ?? .data
+        ]
+
+        savePanel.beginSheetModal(for: window) { [weak self] result in
+            guard result == .OK, let destinationURL = savePanel.url else {
+                return
+            }
+
+            do {
+                let sourceData = try Data(contentsOf: sourceURL)
+                let exportData: Data
+                if let sourceIndex = sourceIndex {
+                    exportData = try ImageCoreImpl().extractHEICFrame(
+                        from: sourceData,
+                        at: sourceIndex
+                    )
+                } else {
+                    exportData = sourceData
+                }
+                try exportData.write(to: destinationURL, options: .atomic)
+            } catch {
+                self?.delegate?.notify(error.localizedDescription)
+            }
+        }
+    }
 }
 
 // MARK: - Drag and Drop
 
 extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate {
+    func filePromiseDetails(at indexPath: IndexPath) -> (URL, Int?, String)? {
+        guard dataController.data.items.indices.contains(indexPath.item) else {
+            return nil
+        }
+        let model = dataController.data.items[indexPath.item]
+        let sourceIndex = model.sourceIndex
+        let name = model.url.deletingPathExtension().lastPathComponent
+        let filename = sourceIndex.map { "\(name)-\($0 + 1).heic" }
+            ?? model.url.lastPathComponent
+        return (model.url, sourceIndex, filename)
+    }
+
     func processInternalCollectionItems(_ indexPaths: [IndexPath], insertIndexPath: IndexPath) {
         var moveIndexPaths: [IndexPath] = []
         var shift = 0
@@ -439,6 +498,17 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         let count = contentView.selectedIndexPaths.count
         
         menu.removeAllItems()
+        if count == 1,
+           let indexPath = contentView.selectedIndexPaths.first,
+           filePromiseDetails(at: indexPath) != nil {
+            let exportItem = NSMenuItem(
+                title: Localization.Wallpaper.Gallery.menuExport,
+                action: #selector(collectionMenuExportImage(_:)),
+                keyEquivalent: String()
+            )
+            exportItem.target = self
+            menu.addItem(exportItem)
+        }
         let item = NSMenuItem(
             title: Localization.Wallpaper.Gallery.menuDelete(param1: count),
             action: #selector(collectionMenuDeleteItems(_:)),

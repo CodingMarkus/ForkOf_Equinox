@@ -65,6 +65,7 @@
 "wallpaper.gallery.drag.supplementary" = "PNG、JPEG、TIFF、HEIC形式のファイルを使用してください。";
 "wallpaper.gallery.or" = "または";
 "wallpaper.gallery.browse" = "参照";
+"wallpaper.gallery.export" = "画像を書き出す…";
 "wallpaper.gallery.azimuth" = "方位角:";
 "wallpaper.gallery.azimuth.value" = "値";
 "wallpaper.gallery.altitude" = "高度:";

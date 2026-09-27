@@ -280,6 +280,7 @@
 
 /* (No Comment) */
 "wallpaper.gallery.browse" = "瀏覽";
+"wallpaper.gallery.export" = "匯出圖像…";
 
 /* (No Comment) */
 "wallpaper.gallery.drag.supplementary" = "檔案應該為 PNG、JPEG、TIFF 或 HEIF。";

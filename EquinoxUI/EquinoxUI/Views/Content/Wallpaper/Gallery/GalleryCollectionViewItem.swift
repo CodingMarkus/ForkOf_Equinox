@@ -73,6 +73,14 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
         }
     }
 
+    public override var draggingImageComponents: [NSDraggingImageComponent] {
+        guard let image = contentView.image else { return [] }
+        let component = NSDraggingImageComponent(key: .icon)
+        component.contents = image
+        component.frame = contentView.draggingImageFrame
+        return [component]
+    }
+
     public override var isSelected: Bool {
         didSet {
             contentView.isHiglighted = shouldBeHighlighted()
@@ -107,6 +115,10 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
     public func setModel(_ model: GalleryModel, animated: Bool) {
         self.model = model
         configure(model, animated: animated)
+    }
+
+    public var draggingImage: NSImage? {
+        return contentView.image
     }
     
     public func flash() {

@@ -40,6 +40,7 @@ public protocol ImageCore {
         progressCallback: ProgressCallback?
     ) throws -> Data
     func getImageFormat(for url: URL) throws -> ImageFormatType
+    func extractHEICFrame(from data: Data, at index: Int) throws -> Data
     func resizeImage(image: NSImage, size: NSSize) -> NSImage
     func validateImage(_ url: URL, imageFormat: [ImageFormatType]) -> Bool
 }
@@ -104,6 +105,13 @@ public final class ImageCoreImpl: ImageCore {
             destinationType: destinationType,
             progressCallback: progressCallback
         )
+    }
+
+    public func extractHEICFrame(from data: Data, at index: Int) throws -> Data {
+        guard let imageData = HEIFMuxer.extractImage(in: data, at: index) else {
+            throw ImageError.invalidImageFormat
+        }
+        return imageData
     }
         
     public func resizeImage(image: NSImage, size: NSSize) -> NSImage {

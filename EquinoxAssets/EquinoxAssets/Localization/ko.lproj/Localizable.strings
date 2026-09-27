@@ -65,6 +65,7 @@
 "wallpaper.gallery.drag.supplementary" = "파일 확장자는 png, jpeg, tiff, heif만을 지원합니다.";
 "wallpaper.gallery.or" = "또는";
 "wallpaper.gallery.browse" = "찾기";
+"wallpaper.gallery.export" = "이미지 내보내기…";
 "wallpaper.gallery.azimuth" = "방위각:";
 "wallpaper.gallery.azimuth.value" = "값";
 "wallpaper.gallery.altitude" = "고도:";

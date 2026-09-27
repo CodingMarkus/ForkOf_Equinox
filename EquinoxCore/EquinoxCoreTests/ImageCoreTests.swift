@@ -180,6 +180,19 @@ class ImageCoreTests: XCTestCase {
         )
         XCTAssertEqual(outputPayload, sourcePayload)
 
+        let extracted = try ImageCoreImpl().extractHEICFrame(
+            from: data,
+            at: 1
+        )
+        let extractedSource = try XCTUnwrap(
+            CGImageSourceCreateWithData(extracted as CFData, nil)
+        )
+        XCTAssertEqual(CGImageSourceGetCount(extractedSource), 1)
+        XCTAssertEqual(
+            HEIFMuxer.primaryCodedPayload(in: extracted),
+            outputPayload
+        )
+
         let output = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("heic")

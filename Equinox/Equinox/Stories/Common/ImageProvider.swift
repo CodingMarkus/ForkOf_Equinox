@@ -85,10 +85,25 @@ final class ImageProviderImpl: ImageProvider {
             }
             let image: NSImage?
             if let index = sourceIndex,
-               let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-               let frame = CGImageSourceCreateImageAtIndex(
-                source, index, nil
-               ) {
+               let source = CGImageSourceCreateWithURL(url as CFURL, nil) {
+                let frame: CGImage?
+                if case .resized(let requestedSize, let respectAspect) =
+                    resizeMode {
+                    frame = createThumbnail(
+                        from: source,
+                        at: index,
+                        requestedSize: requestedSize,
+                        respectAspect: respectAspect
+                    )
+                } else {
+                    frame = CGImageSourceCreateImageAtIndex(source, index, nil)
+                }
+                guard let frame = frame else {
+                    OperationQueue.main.addOperation {
+                        completion(nil)
+                    }
+                    return
+                }
                 image = NSImage(cgImage: frame, size: .zero)
             } else if sourceIndex == nil {
                 image = NSImage(contentsOf: url)
@@ -132,6 +147,61 @@ final class ImageProviderImpl: ImageProvider {
                 completion(resizedImage)
             }
         }
+    }
+
+    private func createThumbnail(
+        from source: CGImageSource,
+        at index: Int,
+        requestedSize: NSSize,
+        respectAspect: Bool
+    ) -> CGImage? {
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(
+            source,
+            index,
+            nil
+        ) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? CGFloat,
+              let height = properties[kCGImagePropertyPixelHeight] as? CGFloat,
+              width > 0,
+              height > 0 else {
+            return nil
+        }
+
+        let orientation = properties[kCGImagePropertyOrientation] as? Int ?? 1
+        let imageWidth = orientation >= 5 && orientation <= 8 ? height : width
+        let imageHeight = orientation >= 5 && orientation <= 8 ? width : height
+        let targetSize: NSSize
+
+        if respectAspect {
+            let imageAspect = imageWidth / imageHeight
+            let requestedAspect = requestedSize.width / requestedSize.height
+            if imageAspect < requestedAspect {
+                targetSize = .init(
+                    width: requestedSize.width,
+                    height: requestedSize.width / imageAspect
+                )
+            } else {
+                targetSize = .init(
+                    width: requestedSize.width / imageAspect,
+                    height: requestedSize.height
+                )
+            }
+        } else {
+            targetSize = requestedSize
+        }
+
+        let maxPixelSize = Int(ceil(max(targetSize.width, targetSize.height)))
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+            kCGImageSourceShouldCacheImmediately: true
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(
+            source,
+            index,
+            options as CFDictionary
+        )
     }
 
     func validateImages(_ urls: [URL]) -> [URL] {

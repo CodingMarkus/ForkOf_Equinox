@@ -274,6 +274,7 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
         }
         
         let openPanel = NSOpenPanel()
+        openPanel.directoryURL = FilePanelDirectories.open
         openPanel.title = Localization.Wallpaper.Main.browse
         openPanel.showsResizeIndicator = true
         openPanel.showsHiddenFiles = true
@@ -286,6 +287,9 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
         openPanel.beginSheetModal(for: window) { [weak self] result in
             guard let self = self, result == .OK else {
                 return
+            }
+            if let url = openPanel.urls.first {
+                FilePanelDirectories.rememberOpen(for: url)
             }
             self.galleryController?.didBrowse(openPanel.urls)
         }

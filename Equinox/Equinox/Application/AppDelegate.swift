@@ -30,6 +30,42 @@ import AppKit
 import EquinoxAssets
 import EquinoxCore
 
+enum FilePanelDirectories {
+    private static let openKey = "openPanelLastDirectory"
+    private static let saveKey = "savePanelLastDirectory"
+
+    static var open: URL? {
+        return directory(forKey: openKey)
+    }
+
+    static var save: URL? {
+        return directory(forKey: saveKey)
+    }
+
+    static func rememberOpen(for fileURL: URL) {
+        remember(fileURL, forKey: openKey)
+    }
+
+    static func rememberSave(for fileURL: URL) {
+        remember(fileURL, forKey: saveKey)
+    }
+
+    private static func directory(forKey key: String) -> URL? {
+        guard let path = UserDefaults.standard.string(forKey: key) else {
+            return nil
+        }
+
+        return URL(fileURLWithPath: path, isDirectory: true)
+    }
+
+    private static func remember(_ fileURL: URL, forKey key: String) {
+        UserDefaults.standard.set(
+            fileURL.deletingLastPathComponent().path,
+            forKey: key
+        )
+    }
+}
+
 final class AppDelegate: NSObject {
     let storiesController: StoriesController = StoriesControllerImpl()
 }
@@ -94,6 +130,7 @@ extension AppDelegate: ApplicationMenuDelegate {
 
     func applicationMenuOpen(_ sender: Any?) {
         let panel = NSOpenPanel()
+        panel.directoryURL = FilePanelDirectories.open
         panel.title = Localization.Menu.File.open
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
@@ -102,6 +139,7 @@ extension AppDelegate: ApplicationMenuDelegate {
         }
         panel.begin { [weak self] result in
             guard result == .OK, let url = panel.url else { return }
+            FilePanelDirectories.rememberOpen(for: url)
             _ = self?.openWallpaper(url)
         }
     }

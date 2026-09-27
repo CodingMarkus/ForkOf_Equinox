@@ -247,6 +247,7 @@ final class WallpaperGalleryViewController: ViewController {
         }
 
         let savePanel = NSSavePanel()
+        savePanel.directoryURL = FilePanelDirectories.save
         savePanel.canCreateDirectories = true
         savePanel.nameFieldStringValue = filename
         savePanel.canSelectHiddenExtension = true
@@ -273,6 +274,7 @@ final class WallpaperGalleryViewController: ViewController {
                     exportData = sourceData
                 }
                 try exportData.write(to: destinationURL, options: .atomic)
+                FilePanelDirectories.rememberSave(for: destinationURL)
             } catch {
                 self?.delegate?.notify(error.localizedDescription)
             }

@@ -254,6 +254,7 @@ final class WallpaperCreateViewController: ViewController {
         }
 
         let savePanel = NSSavePanel()
+        savePanel.directoryURL = FilePanelDirectories.save
         savePanel.canCreateDirectories = true
         if let sourceURL = sourceURL {
             let name = sourceURL.deletingPathExtension().lastPathComponent
@@ -283,6 +284,7 @@ final class WallpaperCreateViewController: ViewController {
 
             do {
                 try createdImage.write(to: finalURL, options: .atomic)
+                FilePanelDirectories.rememberSave(for: finalURL)
                 if notify {
                     self.delegate?.createViewControllerShouldNotify(Localization.Wallpaper.Create.fileSaved)
                 }

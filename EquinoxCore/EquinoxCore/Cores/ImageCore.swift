@@ -73,37 +73,37 @@ public final class ImageCoreImpl: ImageCore {
         metadata: CGImageMetadata,
         progressCallback: ProgressCallback?
     ) throws -> Data {
-        let mutableData = NSMutableData()
         let destinationType = AVFileType.heic as CFString
-        let options = [kCGImageDestinationLossyCompressionQuality: lossyCompressionQuality] as CFDictionary
-
-        guard let destination = CGImageDestinationCreateWithData(mutableData, destinationType, attributes.count, nil) else {
-            throw ImageError.destinationNotCreated
-        }
-        
         let steps = attributes.count + 1
-
-        for (index, attribute) in attributes.enumerated() {
-            let image = try readImage(from: attribute.url,
-                                      index: attribute.sourceIndex)
-
-            if index == 0 {
-                CGImageDestinationAddImageAndMetadata(destination, image, metadata, options)
-            } else {
-                CGImageDestinationAddImage(destination, image, options)
+        if let imageData = try copyExistingHEIC(
+            from: attributes,
+            metadata: metadata,
+            destinationType: destinationType
+        ) {
+            for index in attributes.indices {
+                progressCallback?(index + 1, steps)
             }
-
-            let step = index + 1
-            progressCallback?(step, steps)
+            progressCallback?(steps, steps)
+            return imageData
         }
 
-        guard CGImageDestinationFinalize(destination) else {
-            throw ImageError.invalidImageFormat
+        if let imageData = try packHEICFrames(
+            from: attributes,
+            metadata: metadata
+        ) {
+            for index in attributes.indices {
+                progressCallback?(index + 1, steps)
+            }
+            progressCallback?(steps, steps)
+            return imageData
         }
 
-        progressCallback?(steps, steps)
-
-        return mutableData as Data
+        return try createImageData(
+            from: attributes,
+            metadata: metadata,
+            destinationType: destinationType,
+            progressCallback: progressCallback
+        )
     }
         
     public func resizeImage(image: NSImage, size: NSSize) -> NSImage {
@@ -136,6 +136,22 @@ public final class ImageCoreImpl: ImageCore {
     }
     
     public func getImageFormat(for url: URL) throws -> ImageFormatType {
+        if let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+           let type = CGImageSourceGetType(source) as String? {
+            switch type {
+            case "public.png":
+                return .png
+            case "public.jpeg":
+                return .jpeg
+            case "public.tiff":
+                return .tiff
+            case "public.heic", "public.heif":
+                return .heic
+            default:
+                break
+            }
+        }
+
         var data: Data
         let signatureLength = 1
 
@@ -163,9 +179,15 @@ public final class ImageCoreImpl: ImageCore {
             return .tiff
 
         default:
-            var heicBuffer = [UInt8](repeating: 0, count: ImageHeaderSignature.heic.count)
+            var heicBuffer = [UInt8](
+                repeating: 0,
+                count: ImageHeaderSignature.heic.count
+            )
             let lowerbound = Constants.heicOffset
             let upperbound = lowerbound + ImageHeaderSignature.heic.count
+            guard data.count >= upperbound else {
+                throw ImageError.invalidImageFormat
+            }
             let range = lowerbound..<upperbound
             data.copyBytes(to: &heicBuffer, from: range)
             if heicBuffer == ImageHeaderSignature.heic {
@@ -190,6 +212,7 @@ public final class ImageCoreImpl: ImageCore {
         if let index = index {
             guard
                 let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                index >= 0,
                 index < CGImageSourceGetCount(source),
                 let image = CGImageSourceCreateImageAtIndex(source, index, nil)
             else {
@@ -201,6 +224,200 @@ public final class ImageCoreImpl: ImageCore {
             throw ImageError.invalidImageFormat
         }
         return try convertImage(image)
+    }
+
+    private func packHEICFrames(
+        from attributes: [ImageAttributes],
+        metadata: CGImageMetadata
+    ) throws -> Data? {
+        guard attributes.count > 1,
+              attributes.allSatisfy({
+                  $0.sourceIndex == nil || $0.sourceIndex == 0
+              }),
+              let xmp = CGImageMetadataCreateXMPData(metadata, nil) as Data?
+        else {
+            return nil
+        }
+
+        var sources: [Data] = []
+        for attribute in attributes {
+            guard try isHEICImage(at: attribute.url),
+                  let frame = try? Data(contentsOf: attribute.url) else {
+                return nil
+            }
+            sources.append(frame)
+        }
+
+        return HEIFMuxer.pack(sources, xmp: xmp)
+    }
+
+    private func createImageData(
+        from attributes: [ImageAttributes],
+        metadata: CGImageMetadata,
+        destinationType: CFString,
+        progressCallback: ProgressCallback?
+    ) throws -> Data {
+        let mutableData = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            mutableData,
+            destinationType,
+            attributes.count,
+            nil
+        ) else {
+            throw ImageError.destinationNotCreated
+        }
+
+        let options = [
+            kCGImageDestinationLossyCompressionQuality: lossyCompressionQuality
+        ] as CFDictionary
+
+        for (index, attribute) in attributes.enumerated() {
+            if try isHEICImage(at: attribute.url) {
+                guard let source = CGImageSourceCreateWithURL(
+                    attribute.url as CFURL,
+                    nil
+                ) else {
+                    throw ImageError.invalidImageFormat
+                }
+
+                let sourceIndex = attribute.sourceIndex ?? 0
+                guard sourceIndex >= 0,
+                      sourceIndex < CGImageSourceGetCount(source) else {
+                    throw ImageError.invalidImageFormat
+                }
+
+                // ImageIO re-encodes HEIC when composing separate sources.
+                CGImageDestinationAddImageFromSource(
+                    destination,
+                    source,
+                    sourceIndex,
+                    options
+                )
+            } else {
+                let image = try readImage(from: attribute.url,
+                                          index: attribute.sourceIndex)
+
+                if index == 0 {
+                    CGImageDestinationAddImageAndMetadata(
+                        destination,
+                        image,
+                        metadata,
+                        options
+                    )
+                } else {
+                    CGImageDestinationAddImage(destination, image, options)
+                }
+            }
+            progressCallback?(index + 1, attributes.count + 1)
+        }
+
+        guard CGImageDestinationFinalize(destination) else {
+            throw ImageError.destinationNotFinalized
+        }
+
+        let result: Data
+        if try isHEICImage(at: attributes[0].url) {
+            result = try copyImageDataWithMetadata(
+                mutableData as Data,
+                metadata: metadata,
+                destinationType: destinationType
+            )
+        } else {
+            result = mutableData as Data
+        }
+
+        progressCallback?(attributes.count + 1, attributes.count + 1)
+        return result
+    }
+
+    private func copyImageDataWithMetadata(
+        _ data: Data,
+        metadata: CGImageMetadata,
+        destinationType: CFString
+    ) throws -> Data {
+        guard let source = CGImageSourceCreateWithData(
+            data as CFData,
+            nil
+        ) else {
+            throw ImageError.invalidImageFormat
+        }
+
+        let mutableData = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            mutableData,
+            destinationType,
+            CGImageSourceGetCount(source),
+            nil
+        ) else {
+            throw ImageError.destinationNotCreated
+        }
+
+        let options = [kCGImageDestinationMetadata: metadata] as CFDictionary
+        var error: Unmanaged<CFError>?
+        guard CGImageDestinationCopyImageSource(
+            destination,
+            source,
+            options,
+            &error
+        ) else {
+            error?.release()
+            throw ImageError.destinationNotFinalized
+        }
+
+        return mutableData as Data
+    }
+
+    private func copyExistingHEIC(
+        from attributes: [ImageAttributes],
+        metadata: CGImageMetadata,
+        destinationType: CFString
+    ) throws -> Data? {
+        guard let first = attributes.first,
+              attributes.allSatisfy({ $0.url == first.url }),
+              attributes.enumerated().allSatisfy({
+                  $0.element.sourceIndex == $0.offset
+              }),
+              try isHEICImage(at: first.url),
+              let source = CGImageSourceCreateWithURL(
+                  first.url as CFURL,
+                  nil
+              ),
+              CGImageSourceGetCount(source) == attributes.count else {
+            return nil
+        }
+
+        let mutableData = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            mutableData,
+            destinationType,
+            attributes.count,
+            nil
+        ) else {
+            throw ImageError.destinationNotCreated
+        }
+
+        let options = [kCGImageDestinationMetadata: metadata] as CFDictionary
+        var error: Unmanaged<CFError>?
+        guard CGImageDestinationCopyImageSource(
+            destination,
+            source,
+            options,
+            &error
+        ) else {
+            error?.release()
+            throw ImageError.destinationNotFinalized
+        }
+
+        return mutableData as Data
+    }
+
+    private func isHEICImage(at url: URL) throws -> Bool {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let type = CGImageSourceGetType(source) as String? else {
+            throw ImageError.invalidImageFormat
+        }
+
+        return type == "public.heic" || type == "public.heif"
     }
 
     private func convertImage(_ image: NSImage) throws -> CGImage {

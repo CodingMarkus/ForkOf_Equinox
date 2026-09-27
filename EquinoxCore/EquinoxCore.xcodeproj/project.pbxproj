@@ -31,6 +31,7 @@
 		F3BD019426C352EF0090D864 /* SolarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3BD019326C352EF0090D864 /* SolarService.swift */; };
 		F3D01414274354DD00065404 /* image.png in Resources */ = {isa = PBXBuildFile; fileRef = F3D01413274354DD00065404 /* image.png */; };
 		F3D2EE04267DCD9C009704C5 /* ImageCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D2EDEC267DCD9C009704C5 /* ImageCore.swift */; };
+		F42A000126A0000000000001 /* HEIFMuxer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F42A000226A0000000000001 /* HEIFMuxer.swift */; };
 		F3D2EE05267DCD9C009704C5 /* MetadataCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D2EDED267DCD9C009704C5 /* MetadataCore.swift */; };
 		F3D2EE06267DCD9C009704C5 /* FileCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D2EDEE267DCD9C009704C5 /* FileCore.swift */; };
 		F3D2EE07267DCD9C009704C5 /* FileError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D2EDF0267DCD9C009704C5 /* FileError.swift */; };
@@ -87,6 +88,7 @@
 		F3BD019326C352EF0090D864 /* SolarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolarService.swift; sourceTree = "<group>"; };
 		F3D01413274354DD00065404 /* image.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = image.png; sourceTree = "<group>"; };
 		F3D2EDEC267DCD9C009704C5 /* ImageCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageCore.swift; sourceTree = "<group>"; };
+		F42A000226A0000000000001 /* HEIFMuxer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HEIFMuxer.swift; sourceTree = "<group>"; };
 		F3D2EDED267DCD9C009704C5 /* MetadataCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MetadataCore.swift; sourceTree = "<group>"; };
 		F3D2EDEE267DCD9C009704C5 /* FileCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileCore.swift; sourceTree = "<group>"; };
 		F3D2EDF0267DCD9C009704C5 /* FileError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileError.swift; sourceTree = "<group>"; };
@@ -203,6 +205,7 @@
 			isa = PBXGroup;
 			children = (
 				F3D2EDEC267DCD9C009704C5 /* ImageCore.swift */,
+				F42A000226A0000000000001 /* HEIFMuxer.swift */,
 				F3D2EDEE267DCD9C009704C5 /* FileCore.swift */,
 				F3D2EDED267DCD9C009704C5 /* MetadataCore.swift */,
 				F399A512268B553500ED45EF /* ImageCacheCore.swift */,
@@ -405,6 +408,7 @@
 				F376FEAD2F5C8A4B001DBB99 /* StoreError.swift in Sources */,
 				F3D2EE08267DCD9C009704C5 /* ImageError.swift in Sources */,
 				F3D2EE04267DCD9C009704C5 /* ImageCore.swift in Sources */,
+				F42A000126A0000000000001 /* HEIFMuxer.swift in Sources */,
 				F356C8C12736F1B800E915C6 /* SettingsService.swift in Sources */,
 				F3D2EE05267DCD9C009704C5 /* MetadataCore.swift in Sources */,
 				F3D2EE06267DCD9C009704C5 /* FileCore.swift in Sources */,

@@ -26,7 +26,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-import EquinoxCore
+@testable import EquinoxCore
+import ImageIO
 import XCTest
 
 class ImageCoreTests: XCTestCase {
@@ -132,6 +133,72 @@ class ImageCoreTests: XCTestCase {
         // Then
         XCTAssertNotNil(image)
     }
+
+    func testCreateImageFromHEICSource() throws {
+        // Given
+        // swiftlint:disable:next force_unwrapping
+        let path = testBundle.path(forResource: "image", ofType: "heic")!
+        let url = URL(fileURLWithPath: path)
+        let imageAttributes = [
+            ImageAttributes(
+                url: url,
+                index: 0,
+                primary: true,
+                imageType: .appearance,
+                appearanceType: .light
+            ),
+            ImageAttributes(
+                url: url,
+                index: 1,
+                primary: false,
+                imageType: .appearance,
+                appearanceType: .dark
+            )
+        ]
+        let metadata = try MetadataCoreImpl().generate(from: imageAttributes)
+
+        // When
+        let data = try imageCore.createImage(
+            from: imageAttributes,
+            metadata: metadata,
+            progressCallback: nil
+        )
+
+        // Then
+        let source = try XCTUnwrap(
+            CGImageSourceCreateWithData(data as CFData, nil)
+        )
+        XCTAssertEqual(CGImageSourceGetCount(source), 2)
+        for index in 0..<2 {
+            XCTAssertNotNil(CGImageSourceCreateImageAtIndex(source, index, nil))
+        }
+        let outputPayload = try XCTUnwrap(
+            HEIFMuxer.primaryCodedPayload(in: data)
+        )
+        let sourcePayload = try XCTUnwrap(
+            HEIFMuxer.primaryCodedPayload(in: try Data(contentsOf: url))
+        )
+        XCTAssertEqual(outputPayload, sourcePayload)
+
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("heic")
+        try data.write(to: output)
+        defer { try? FileManager.default.removeItem(at: output) }
+        let wallpaper = try MetadataCoreImpl().readWallpaper(at: output)
+        XCTAssertEqual(wallpaper.attributes.count, 2)
+        XCTAssertEqual(wallpaper.attributes.map(\.sourceIndex), [0, 1])
+
+        let copied = try imageCore.createImage(
+            from: wallpaper.attributes,
+            metadata: MetadataCoreImpl().generate(from: wallpaper.attributes),
+            progressCallback: nil
+        )
+        let copiedSource = try XCTUnwrap(
+            CGImageSourceCreateWithData(copied as CFData, nil)
+        )
+        XCTAssertEqual(CGImageSourceGetCount(copiedSource), 2)
+    }
     
     func testGetImageFormat() throws {
         // Given
@@ -145,6 +212,26 @@ class ImageCoreTests: XCTestCase {
         
         // Then
         XCTAssertEqual(format, result)
+    }
+
+    func testGetImageFormatWithMIF1Brand() throws {
+        // Given
+        // swiftlint:disable:next force_unwrapping
+        let path = testBundle.path(forResource: "image", ofType: "heic")!
+        var data = try Data(contentsOf: URL(fileURLWithPath: path))
+        data.replaceSubrange(8..<12, with: Data("mif1".utf8))
+
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("heic")
+        try data.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        // When
+        let format = try imageCore.getImageFormat(for: url)
+
+        // Then
+        XCTAssertEqual(format, .heic)
     }
     
     func testValidateImage() throws {
@@ -170,4 +257,5 @@ class ImageCoreTests: XCTestCase {
         // Then
         XCTAssertEqual(result.size, result.size)
     }
+
 }

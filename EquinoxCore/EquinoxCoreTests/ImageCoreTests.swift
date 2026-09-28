@@ -212,6 +212,109 @@ class ImageCoreTests: XCTestCase {
         )
         XCTAssertEqual(CGImageSourceGetCount(copiedSource), 2)
     }
+
+    func testCreateImagePreservesHEICFrameInMixedSources() throws {
+        // Given
+        // swiftlint:disable:next force_unwrapping
+        let heicPath = testBundle.path(forResource: "image", ofType: "heic")!
+        // swiftlint:disable:next force_unwrapping
+        let pngPath = testBundle.path(forResource: "image", ofType: "png")!
+        let heicURL = URL(fileURLWithPath: heicPath)
+        let pngURL = URL(fileURLWithPath: pngPath)
+        let attributes = [
+            ImageAttributes(
+                url: pngURL,
+                index: 0,
+                primary: true,
+                imageType: .appearance,
+                appearanceType: .light
+            ),
+            ImageAttributes(
+                url: heicURL,
+                index: 1,
+                primary: false,
+                imageType: .appearance,
+                appearanceType: .dark
+            )
+        ]
+        let metadata = try XCTUnwrap(
+            try MetadataCoreImpl().generate(from: attributes)
+        )
+        let originalPayload = try XCTUnwrap(
+            HEIFMuxer.primaryCodedPayload(in: try Data(contentsOf: heicURL))
+        )
+
+        // When
+        let data = try imageCore.createImage(
+            from: attributes,
+            metadata: metadata,
+            progressCallback: nil
+        )
+
+        // Then
+        let source = try XCTUnwrap(
+            CGImageSourceCreateWithData(data as CFData, nil)
+        )
+        XCTAssertEqual(CGImageSourceGetCount(source), 2)
+        XCTAssertNotNil(CGImageSourceCreateImageAtIndex(source, 0, nil))
+        XCTAssertNotNil(CGImageSourceCreateImageAtIndex(source, 1, nil))
+
+        let preservedFrame = try imageCore.extractHEICFrame(
+            from: data,
+            at: 1
+        )
+        XCTAssertEqual(
+            HEIFMuxer.primaryCodedPayload(in: preservedFrame),
+            originalPayload
+        )
+
+        let lowQuality = try imageCore.createImage(
+            from: attributes,
+            metadata: metadata,
+            settings: ImageExportSettings(
+                lossyCompressionScope: .allImages,
+                imageQuality: 25
+            ),
+            progressCallback: nil
+        )
+        let highQuality = try imageCore.createImage(
+            from: attributes,
+            metadata: metadata,
+            settings: ImageExportSettings(
+                lossyCompressionScope: .allImages,
+                imageQuality: 90
+            ),
+            progressCallback: nil
+        )
+        let lowQualitySource = try XCTUnwrap(
+            CGImageSourceCreateWithData(lowQuality as CFData, nil)
+        )
+        let highQualitySource = try XCTUnwrap(
+            CGImageSourceCreateWithData(highQuality as CFData, nil)
+        )
+        XCTAssertEqual(CGImageSourceGetCount(lowQualitySource), 2)
+        XCTAssertEqual(CGImageSourceGetCount(highQualitySource), 2)
+        let lowQualityPNG = try imageCore.extractHEICFrame(
+            from: lowQuality,
+            at: 0
+        )
+        let highQualityPNG = try imageCore.extractHEICFrame(
+            from: highQuality,
+            at: 0
+        )
+        XCTAssertNotEqual(
+            HEIFMuxer.primaryCodedPayload(in: lowQualityPNG),
+            HEIFMuxer.primaryCodedPayload(in: highQualityPNG)
+        )
+        let recompressedHEIC = try imageCore.extractHEICFrame(
+            from: lowQuality,
+            at: 1
+        )
+        XCTAssertNotEqual(
+            HEIFMuxer.primaryCodedPayload(in: recompressedHEIC),
+            originalPayload
+        )
+    }
     
     func testGetImageFormat() throws {
         // Given

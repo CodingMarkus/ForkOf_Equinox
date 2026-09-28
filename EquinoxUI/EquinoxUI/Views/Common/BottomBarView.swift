@@ -45,6 +45,7 @@ extension BottomBarView {
         static let buttonWidth: CGFloat = 100
         static let buttonHeight: CGFloat = 32
         static let lineHeight: CGFloat = 1
+        static let accessoryButtonSpacing: CGFloat = 16
     }
 }
 
@@ -53,6 +54,15 @@ extension BottomBarView {
 public final class BottomBarView: VisualEffectView {
     private lazy var button = PushButton()
     private lazy var lineView = LineView()
+    private lazy var accessoryContainer = NSView()
+    private lazy var footerStack: NSStackView = {
+        let stack = NSStackView(views: [accessoryContainer, button])
+        stack.orientation = .vertical
+        stack.alignment = .centerX
+        stack.spacing = Constants.accessoryButtonSpacing
+        return stack
+    }()
+    private var accessoryHeightConstraint: NSLayoutConstraint?
 
     // MARK: - Initializer
 
@@ -69,19 +79,22 @@ public final class BottomBarView: VisualEffectView {
     }
 
     private func setupView() {
-        addSubview(button)
+        accessoryContainer.isHidden = true
+        addSubview(footerStack)
         addSubview(lineView)
     }
     
     private func setupConstraints() {
         button.translatesAutoresizingMaskIntoConstraints = false
         lineView.translatesAutoresizingMaskIntoConstraints = false
+        accessoryContainer.translatesAutoresizingMaskIntoConstraints = false
+        footerStack.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             button.widthAnchor.constraint(equalToConstant: Constants.buttonWidth),
             button.heightAnchor.constraint(equalToConstant: Constants.buttonHeight),
-            button.centerYAnchor.constraint(equalTo: centerYAnchor),
-            button.centerXAnchor.constraint(equalTo: centerXAnchor),
+            footerStack.centerXAnchor.constraint(equalTo: centerXAnchor),
+            footerStack.centerYAnchor.constraint(equalTo: centerYAnchor),
 
             lineView.topAnchor.constraint(equalTo: topAnchor),
             lineView.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -96,6 +109,46 @@ public final class BottomBarView: VisualEffectView {
         didSet {
             button.style = style?.buttonStyle
             lineView.style = style?.lineStyle
+        }
+    }
+
+    public var accessoryView: NSView? {
+        didSet {
+            accessoryContainer.subviews.forEach { $0.removeFromSuperview() }
+            guard let accessoryView = accessoryView else {
+                accessoryHeightConstraint?.isActive = false
+                accessoryHeightConstraint = nil
+                accessoryContainer.isHidden = true
+                return
+            }
+
+            accessoryView.translatesAutoresizingMaskIntoConstraints = false
+            accessoryContainer.addSubview(accessoryView)
+            NSLayoutConstraint.activate([
+                accessoryView.leadingAnchor.constraint(
+                    equalTo: accessoryContainer.leadingAnchor
+                ),
+                accessoryView.trailingAnchor.constraint(
+                    equalTo: accessoryContainer.trailingAnchor
+                ),
+                accessoryView.topAnchor.constraint(
+                    equalTo: accessoryContainer.topAnchor
+                ),
+                accessoryView.bottomAnchor.constraint(
+                    equalTo: accessoryContainer.bottomAnchor
+                )
+            ])
+            accessoryHeightConstraint?.isActive = false
+            let heightConstraint = accessoryContainer.heightAnchor
+                .constraint(equalTo: accessoryView.heightAnchor)
+            accessoryHeightConstraint = heightConstraint
+            NSLayoutConstraint.activate([
+                heightConstraint,
+                accessoryContainer.widthAnchor.constraint(
+                    equalTo: accessoryView.widthAnchor
+                )
+            ])
+            accessoryContainer.isHidden = false
         }
     }
 

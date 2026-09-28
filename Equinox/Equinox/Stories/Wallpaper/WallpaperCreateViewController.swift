@@ -59,6 +59,7 @@ final class WallpaperCreateViewController: ViewController {
     private let imageAttributes: [ImageAttributes]
     private let wallpaperService: WallpaperService
     private let imageProvider: ImageProvider
+    private let exportSettings: ImageExportSettings
     private let sourceURL: URL?
     
     private let operationQueue: OperationQueue = {
@@ -84,12 +85,14 @@ final class WallpaperCreateViewController: ViewController {
         imageAttributes: [ImageAttributes],
         wallpaperService: WallpaperService,
         imageProvider: ImageProvider,
+        exportSettings: ImageExportSettings,
         sourceURL: URL?
     ) {
         self.type = type
         self.imageAttributes = imageAttributes
         self.wallpaperService = wallpaperService
         self.imageProvider = imageProvider
+        self.exportSettings = exportSettings
         self.sourceURL = sourceURL
         super.init()
     }
@@ -172,7 +175,10 @@ final class WallpaperCreateViewController: ViewController {
                     return
                 }
                 do {
-                    self.createdImage = try self.wallpaperService.createWallpaper(self.imageAttributes) { step, steps in
+                    self.createdImage = try self.wallpaperService.createWallpaper(
+                        self.imageAttributes,
+                        settings: self.exportSettings
+                    ) { step, steps in
                         let progress = Float(step) / Float(steps)
                         DispatchQueue.main.async {
                             self.contentView.setProgress(progress, animated: true)

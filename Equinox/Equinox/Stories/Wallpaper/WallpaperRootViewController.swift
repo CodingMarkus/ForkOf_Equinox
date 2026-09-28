@@ -200,7 +200,10 @@ final class WallpaperRootViewController: ViewController {
         self.navigationController?.present(controller, animated: true)
     }
 
-    private func presentCreateController(_ imageAttributes: [ImageAttributes]) {
+    private func presentCreateController(
+        _ imageAttributes: [ImageAttributes],
+        settings: ImageExportSettings
+    ) {
         guard createViewController == nil else {
             return
         }
@@ -209,6 +212,7 @@ final class WallpaperRootViewController: ViewController {
             imageAttributes: imageAttributes,
             wallpaperService: wallpaperService,
             imageProvider: imageProvider,
+            exportSettings: settings,
             sourceURL: initialAttributes?.first?.url
         )
         createViewController = controller
@@ -224,8 +228,11 @@ extension WallpaperRootViewController: WallpaperMainViewControllerDelegate {
         delegate?.rootViewControllerCalculatorWasInteracted()
     }
 
-    func mainViewControllerCreateWasInteracted(_ imageAttributes: [ImageAttributes]) {
-        presentCreateController(imageAttributes)
+    func mainViewControllerCreateWasInteracted(
+        _ imageAttributes: [ImageAttributes],
+        settings: ImageExportSettings
+    ) {
+        presentCreateController(imageAttributes, settings: settings)
     }
 
     func mainViewControllerBackWasInteracted() {

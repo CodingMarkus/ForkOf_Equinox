@@ -62,6 +62,23 @@ enum HEIFMuxer {
 		}
 	}
 
+	static func packFrames(
+		_ sources: [(data: Data, index: Int)],
+		xmp: Data
+	) -> Data? {
+		guard !sources.isEmpty,
+				sources.count < Int(UInt16.max) else { return nil }
+
+		do {
+			let images = try sources.map { source in
+				try readImage(source.data, at: source.index)
+			}
+			return try write(images, xmp: xmp)
+		} catch {
+			return nil
+		}
+	}
+
 	static func primaryCodedPayload(in data: Data) -> Data? {
 		try? readPrimaryImage(data).bytes
 	}

@@ -34,7 +34,10 @@ import EquinoxUI
 // MARK: - Protocols
 
 protocol WallpaperMainViewControllerDelegate: AnyObject {
-    func mainViewControllerCreateWasInteracted(_ imageAttributes: [ImageAttributes])
+    func mainViewControllerCreateWasInteracted(
+        _ imageAttributes: [ImageAttributes],
+        settings: ImageExportSettings
+    )
     func mainViewControllerShouldNotify(_ text: String)
 }
 
@@ -118,7 +121,25 @@ final class WallpaperMainViewController: ViewController {
                 guard let imageAttributes = self.convertData() else {
                     return
                 }
-                self.delegate?.mainViewControllerCreateWasInteracted(imageAttributes)
+                let scope: LossyCompressionScope
+                switch self.contentView.compressionScopeIndex {
+                case 0:
+                    scope = .allImages
+                case 1:
+                    scope = .allButHEIC
+                case 2:
+                    scope = .lossyFormatsButHEIC
+                default:
+                    scope = .noImages
+                }
+                let settings = ImageExportSettings(
+                    lossyCompressionScope: scope,
+                    imageQuality: self.contentView.imageQuality
+                )
+                self.delegate?.mainViewControllerCreateWasInteracted(
+                    imageAttributes,
+                    settings: settings
+                )
             }
         }
     }

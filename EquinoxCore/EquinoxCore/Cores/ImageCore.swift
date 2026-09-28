@@ -37,12 +37,28 @@ public protocol ImageCore {
     func createImage(
         from attributes: [ImageAttributes],
         metadata: CGImageMetadata,
+        settings: ImageExportSettings,
         progressCallback: ProgressCallback?
     ) throws -> Data
     func getImageFormat(for url: URL) throws -> ImageFormatType
     func extractHEICFrame(from data: Data, at index: Int) throws -> Data
     func resizeImage(image: NSImage, size: NSSize) -> NSImage
     func validateImage(_ url: URL, imageFormat: [ImageFormatType]) -> Bool
+}
+
+public extension ImageCore {
+    func createImage(
+        from attributes: [ImageAttributes],
+        metadata: CGImageMetadata,
+        progressCallback: ProgressCallback?
+    ) throws -> Data {
+        try createImage(
+            from: attributes,
+            metadata: metadata,
+            settings: .default,
+            progressCallback: progressCallback
+        )
+    }
 }
 
 // MARK: - Enums, Structs
@@ -72,37 +88,56 @@ public final class ImageCoreImpl: ImageCore {
     public func createImage(
         from attributes: [ImageAttributes],
         metadata: CGImageMetadata,
+        settings: ImageExportSettings,
         progressCallback: ProgressCallback?
     ) throws -> Data {
         let destinationType = AVFileType.heic as CFString
         let steps = attributes.count + 1
-        if let imageData = try copyExistingHEIC(
-            from: attributes,
-            metadata: metadata,
-            destinationType: destinationType
-        ) {
-            for index in attributes.indices {
-                progressCallback?(index + 1, steps)
+        let preserveHEIC = settings.lossyCompressionScope != .allImages
+
+        if preserveHEIC {
+            if let imageData = try copyExistingHEIC(
+                from: attributes,
+                metadata: metadata,
+                destinationType: destinationType
+            ) {
+                for index in attributes.indices {
+                    progressCallback?(index + 1, steps)
+                }
+                progressCallback?(steps, steps)
+                return imageData
             }
-            progressCallback?(steps, steps)
-            return imageData
+
+            if let imageData = try packHEICFrames(
+                from: attributes,
+                metadata: metadata
+            ) {
+                for index in attributes.indices {
+                    progressCallback?(index + 1, steps)
+                }
+                progressCallback?(steps, steps)
+                return imageData
+            }
         }
 
-        if let imageData = try packHEICFrames(
-            from: attributes,
-            metadata: metadata
-        ) {
-            for index in attributes.indices {
-                progressCallback?(index + 1, steps)
-            }
-            progressCallback?(steps, steps)
-            return imageData
+        let containsHEIC = try attributes.contains {
+            try isHEICImage(at: $0.url)
+        }
+        if containsHEIC {
+            return try createHEICFrames(
+                from: attributes,
+                metadata: metadata,
+                preserveHEIC: preserveHEIC,
+                settings: settings,
+                progressCallback: progressCallback
+            )
         }
 
         return try createImageData(
             from: attributes,
             metadata: metadata,
             destinationType: destinationType,
+            settings: settings,
             progressCallback: progressCallback
         )
     }
@@ -259,10 +294,88 @@ public final class ImageCoreImpl: ImageCore {
         return HEIFMuxer.pack(sources, xmp: xmp)
     }
 
+    private func createHEICFrames(
+        from attributes: [ImageAttributes],
+        metadata: CGImageMetadata,
+        preserveHEIC: Bool,
+        settings: ImageExportSettings,
+        progressCallback: ProgressCallback?
+    ) throws -> Data {
+        guard let xmp = CGImageMetadataCreateXMPData(metadata, nil) as Data?
+        else {
+            throw ImageError.invalidImageFormat
+        }
+
+        var frames: [(data: Data, index: Int)] = []
+        for (index, attribute) in attributes.enumerated() {
+            let data: Data
+            let frameIndex: Int
+            let isHEIC = try isHEICImage(at: attribute.url)
+            if preserveHEIC && isHEIC {
+                data = try Data(contentsOf: attribute.url)
+                frameIndex = attribute.sourceIndex ?? 0
+            } else {
+                data = try encodeHEICFrame(
+                    from: attribute,
+                    metadata: index == 0 ? metadata : nil,
+                    settings: settings
+                )
+                frameIndex = 0
+            }
+            frames.append((data: data, index: frameIndex))
+            progressCallback?(index + 1, attributes.count + 1)
+        }
+
+        guard let result = HEIFMuxer.packFrames(frames, xmp: xmp) else {
+            throw ImageError.destinationNotFinalized
+        }
+        progressCallback?(attributes.count + 1, attributes.count + 1)
+        return result
+    }
+
+    private func encodeHEICFrame(
+        from attribute: ImageAttributes,
+        metadata: CGImageMetadata?,
+        settings: ImageExportSettings
+    ) throws -> Data {
+        let mutableData = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            mutableData,
+            AVFileType.heic as CFString,
+            1,
+            nil
+        ) else {
+            throw ImageError.destinationNotCreated
+        }
+
+        let image = try readImage(from: attribute.url,
+                                  index: attribute.sourceIndex)
+        let options = try compressionOptions(
+            for: attribute,
+            settings: settings
+        )
+        if let metadata = metadata {
+            CGImageDestinationAddImageAndMetadata(
+                destination,
+                image,
+                metadata,
+                options
+            )
+        } else {
+            CGImageDestinationAddImage(destination, image, options)
+        }
+
+        guard CGImageDestinationFinalize(destination) else {
+            throw ImageError.destinationNotFinalized
+        }
+        return mutableData as Data
+    }
+
     private func createImageData(
         from attributes: [ImageAttributes],
         metadata: CGImageMetadata,
         destinationType: CFString,
+        settings: ImageExportSettings,
         progressCallback: ProgressCallback?
     ) throws -> Data {
         let mutableData = NSMutableData()
@@ -275,11 +388,11 @@ public final class ImageCoreImpl: ImageCore {
             throw ImageError.destinationNotCreated
         }
 
-        let options = [
-            kCGImageDestinationLossyCompressionQuality: lossyCompressionQuality
-        ] as CFDictionary
-
         for (index, attribute) in attributes.enumerated() {
+            let options = try compressionOptions(
+                for: attribute,
+                settings: settings
+            )
             if try isHEICImage(at: attribute.url) {
                 guard let source = CGImageSourceCreateWithURL(
                     attribute.url as CFURL,
@@ -375,6 +488,35 @@ public final class ImageCoreImpl: ImageCore {
         return mutableData as Data
     }
 
+    private func compressionOptions(
+        for attribute: ImageAttributes,
+        settings: ImageExportSettings
+    ) throws -> CFDictionary {
+        let format = try getImageFormat(for: attribute.url)
+        let selectedQuality = Double(settings.imageQuality) / 100
+        let requestedQuality: Double
+        switch settings.lossyCompressionScope {
+        case .allImages, .allButHEIC:
+            requestedQuality = selectedQuality
+        case .lossyFormatsButHEIC:
+            switch format {
+            case .png, .tiff:
+                requestedQuality = 1.0
+            case .jpeg, .heic:
+                requestedQuality = selectedQuality
+            }
+        case .noImages:
+            requestedQuality = 1.0
+        }
+
+        let quality = requestedQuality == 1.0
+            ? losslessCompressionQuality
+            : requestedQuality
+        return [
+            kCGImageDestinationLossyCompressionQuality: quality
+        ] as CFDictionary
+    }
+
     private func copyExistingHEIC(
         from attributes: [ImageAttributes],
         metadata: CGImageMetadata,
@@ -383,7 +525,8 @@ public final class ImageCoreImpl: ImageCore {
         guard let first = attributes.first,
               attributes.allSatisfy({ $0.url == first.url }),
               attributes.enumerated().allSatisfy({
-                  $0.element.sourceIndex == $0.offset
+                  $0.element.sourceIndex == nil
+                      || $0.element.sourceIndex == $0.offset
               }),
               try isHEICImage(at: first.url),
               let source = CGImageSourceCreateWithURL(
@@ -435,7 +578,7 @@ public final class ImageCoreImpl: ImageCore {
         return cgImage
     }
 
-    private var lossyCompressionQuality: Double {
+    private var losslessCompressionQuality: Double {
         let lossless = 1.0
         let lossy = 0.9999999
 

@@ -170,6 +170,12 @@ public enum Localization {
             public static let create = Localization.localizedString(key: "wallpaper.main.create")
             public static let browse = Localization.localizedString(key: "wallpaper.main.browse")
             public static let validate = Localization.localizedString(key: "wallpaper.main.validate")
+            public static let sizeCalculating = Localization.localizedString(
+                key: "wallpaper.main.size.calculating"
+            )
+            public static let sizeUnavailable = Localization.localizedString(
+                key: "wallpaper.main.size.unavailable"
+            )
         }
         
         public enum Gallery {

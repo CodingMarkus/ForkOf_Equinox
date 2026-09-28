@@ -60,6 +60,8 @@
 "wallpaper.main.create" = "Create";
 "wallpaper.main.browse" = "Browse Image Files";
 "wallpaper.main.validate" = "Please fill in all fields";
+"wallpaper.main.size.calculating" = "Calculating...";
+"wallpaper.main.size.unavailable" = "Unavailable";
 
 "wallpaper.gallery.drag.title" = "Drag and drop your images";
 "wallpaper.gallery.drag.supplementary" = "Files should be PNG, JPEG, TIFF, or HEIC.";

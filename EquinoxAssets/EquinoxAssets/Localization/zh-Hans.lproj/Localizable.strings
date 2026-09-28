@@ -60,6 +60,8 @@
 "wallpaper.main.create" = "创建";
 "wallpaper.main.browse" = "浏览图像文件";
 "wallpaper.main.validate" = "请填写所有字段";
+"wallpaper.main.size.calculating" = "正在计算...";
+"wallpaper.main.size.unavailable" = "不可用";
 
 "wallpaper.gallery.drag.title" = "拖放你的图像";
 "wallpaper.gallery.drag.supplementary" = "支持这些格式：png, jpeg, tiff, heif.";

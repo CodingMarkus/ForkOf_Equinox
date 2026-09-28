@@ -60,6 +60,8 @@
 "wallpaper.main.create" = "Crear";
 "wallpaper.main.browse" = "Explorar archivos de imagen";
 "wallpaper.main.validate" = "Por favor, rellene todos los campos";
+"wallpaper.main.size.calculating" = "Calculando...";
+"wallpaper.main.size.unavailable" = "No disponible";
 
 "wallpaper.gallery.drag.title" = "Arrastrar y soltar sus imágenes";
 "wallpaper.gallery.drag.supplementary" = "Los archivos deben ser png, jpeg, tiff o heif.";

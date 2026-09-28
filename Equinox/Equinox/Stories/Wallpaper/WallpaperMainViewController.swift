@@ -362,7 +362,9 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
             return
         }
         contentView.isCreateButtonEnabled = canCreateWallpaper
-        galleryController?.setOutputSizeText("Calculating...")
+        galleryController?.setOutputSizeText(
+            Localization.Wallpaper.Main.sizeCalculating
+        )
         let operation = BlockOperation { [weak self] in
             guard let self = self else { return }
             Thread.sleep(forTimeInterval: 0.6)
@@ -396,7 +398,9 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
             } catch {
                 DispatchQueue.main.async {
                     if revision == self.previewRevision {
-                        self.galleryController?.setOutputSizeText("Unavailable")
+                        self.galleryController?.setOutputSizeText(
+                            Localization.Wallpaper.Main.sizeUnavailable
+                        )
                     }
                 }
             }

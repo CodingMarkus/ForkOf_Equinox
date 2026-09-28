@@ -58,6 +58,8 @@
 "wallpaper.main.create" = "Erstellen";
 "wallpaper.main.browse" = "Bilddateien durchsuchen";
 "wallpaper.main.validate" = "Bitte fülle alle Felder aus";
+"wallpaper.main.size.calculating" = "Wird berechnet...";
+"wallpaper.main.size.unavailable" = "Nicht verfügbar";
 
 "wallpaper.gallery.drag.title" = "Ziehe deine Bilder hierher";
 "wallpaper.gallery.drag.supplementary" = "Erlaubte Dateiformate: PNG, JPEG, TIFF oder HEIC.";

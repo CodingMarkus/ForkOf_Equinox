@@ -60,6 +60,8 @@
 "wallpaper.main.create" = "建立";
 "wallpaper.main.browse" = "瀏覽圖檔";
 "wallpaper.main.validate" = "請填寫所有欄位";
+"wallpaper.main.size.calculating" = "正在計算...";
+"wallpaper.main.size.unavailable" = "無法使用";
 
 "wallpaper.gallery.drag.title" = "將您的圖片拖放至此";
 "wallpaper.gallery.drag.supplementary" = "檔案格式應為 png、jpeg、tiff，或 heif。";

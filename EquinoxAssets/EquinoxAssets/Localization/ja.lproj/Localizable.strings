@@ -60,6 +60,8 @@
 "wallpaper.main.create" = "作成";
 "wallpaper.main.browse" = "画像ファイルを参照";
 "wallpaper.main.validate" = "すべての項目を入力してください";
+"wallpaper.main.size.calculating" = "計算中...";
+"wallpaper.main.size.unavailable" = "利用できません";
 
 "wallpaper.gallery.drag.title" = "画像をドラッグ＆ドロップ";
 "wallpaper.gallery.drag.supplementary" = "PNG、JPEG、TIFF、HEIC形式のファイルを使用してください。";

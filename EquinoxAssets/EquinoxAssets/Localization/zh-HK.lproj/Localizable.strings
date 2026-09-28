@@ -329,6 +329,8 @@
 
 /* (No Comment) */
 "wallpaper.main.validate" = "請填寫所有欄位";
+"wallpaper.main.size.calculating" = "正在計算...";
+"wallpaper.main.size.unavailable" = "無法使用";
 
 /* (No Comment) */
 "wallpaper.set.continue" = "繼續";

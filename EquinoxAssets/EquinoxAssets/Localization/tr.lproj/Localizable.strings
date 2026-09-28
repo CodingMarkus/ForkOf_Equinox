@@ -60,6 +60,8 @@
 "wallpaper.main.create" = "Oluştur";
 "wallpaper.main.browse" = "Görüntü dosyalarına göz atın";
 "wallpaper.main.validate" = "Lütfen tüm alanları doldurun";
+"wallpaper.main.size.calculating" = "Hesaplanıyor...";
+"wallpaper.main.size.unavailable" = "Kullanılamıyor";
 
 "wallpaper.gallery.drag.title" = "Fotoğraflarınızı sürükleyip bırakın";
 "wallpaper.gallery.drag.supplementary" = "Dosyalar png, jpeg, tiff veya heif formatında olmalıdır.";

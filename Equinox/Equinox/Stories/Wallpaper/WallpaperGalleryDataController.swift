@@ -43,7 +43,7 @@ final class WallpaperGalleryDataController {
     private let imageProvider: ImageProvider
     
     private var mutableData = GalleryData(items: [], info: String())
-    private var outputSizeText = "Calculating..."
+    private var outputSizeText = Localization.Wallpaper.Main.sizeCalculating
     
     // MARK: - Initializer
     

@@ -66,9 +66,9 @@ extension TypeView {
         static let descriptionLabelTopOffset: CGFloat = 2
         static let lineHeight: CGFloat = 1
         static let lineTopOffset: CGFloat = 14
-        static let stackViewOffset: CGFloat = 10
+        static let stackViewOffset: CGFloat = 18
         static let footerTopOffset: CGFloat = 24
-        static let footerBottomOffset: CGFloat = 16
+        static let footerBottomOffset: CGFloat = 24
     }
 }
 

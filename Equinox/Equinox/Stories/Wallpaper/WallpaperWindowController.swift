@@ -118,6 +118,7 @@ final class WallpaperWindowController: WindowController {
         }
 
         window = contentWindow
+        window?.isDocumentEdited = hasUnsavedChanges
         window?.setContentSize(Constants.regularSize)
         setWindowTitle()
         window?.makeKeyAndOrderFront(self)
@@ -157,6 +158,10 @@ final class WallpaperWindowController: WindowController {
         return wallpaperRootViewController?.canRevert == true
     }
 
+    var hasUnsavedChanges: Bool {
+        return wallpaperRootViewController?.hasUnsavedChanges == true
+    }
+
     func revert() {
         wallpaperRootViewController?.revert()
     }
@@ -175,6 +180,10 @@ extension WallpaperWindowController: WallpaperRootViewControllerDelegate {
 
     func rootViewControllerShouldNotify(_ text: String) {
         contentController?.notify(text)
+    }
+
+    func rootViewControllerUnsavedChangesDidChange(_ hasChanges: Bool) {
+        window?.isDocumentEdited = hasChanges
     }
 }
 

@@ -165,6 +165,10 @@ extension StoriesControllerImpl: NSWindowDelegate {
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         let closeWindow = sender
         if let index = wallpaperWindowControllers.firstIndex(where: { $0.window === closeWindow }) {
+            guard !wallpaperWindowControllers[index].hasUnsavedChanges
+                || confirmDiscardingChanges() else {
+                return false
+            }
             wallpaperWindowControllers.remove(at: index)
             if wallpaperWindowControllers.isEmpty {
                 NSApp.terminate(self)
@@ -180,6 +184,16 @@ extension StoriesControllerImpl: NSWindowDelegate {
             supportWindowController = nil
         }
         return true
+    }
+
+    private func confirmDiscardingChanges() -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "Discard unsaved changes?"
+        alert.informativeText = "Your changes will be lost if you close this window."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Discard Changes")
+        alert.addButton(withTitle: "Cancel")
+        return alert.runModal() == .alertFirstButtonReturn
     }
 }
 

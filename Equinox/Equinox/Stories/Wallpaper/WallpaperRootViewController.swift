@@ -37,6 +37,7 @@ protocol WallpaperRootViewControllerDelegate: AnyObject {
     func rootViewControllerNewWasInteracted()
     func rootViewControllerCalculatorWasInteracted()
     func rootViewControllerShouldNotify(_ text: String)
+    func rootViewControllerUnsavedChangesDidChange(_ hasChanges: Bool)
 }
 
 // MARK: - Class
@@ -106,6 +107,10 @@ final class WallpaperRootViewController: ViewController {
         return initialAttributes != nil
             && createViewController == nil
             && mainViewController?.canRevert == true
+    }
+
+    var hasUnsavedChanges: Bool {
+        return mainViewController?.hasUnsavedChanges == true
     }
 
     func revert() {
@@ -224,6 +229,10 @@ final class WallpaperRootViewController: ViewController {
 // MARK: - MainViewControllerDelegate
 
 extension WallpaperRootViewController: WallpaperMainViewControllerDelegate {
+    func mainViewControllerUnsavedChangesDidChange(_ hasChanges: Bool) {
+        delegate?.rootViewControllerUnsavedChangesDidChange(hasChanges)
+    }
+
     func mainViewControllerCalculatorWasInteracted() {
         delegate?.rootViewControllerCalculatorWasInteracted()
     }

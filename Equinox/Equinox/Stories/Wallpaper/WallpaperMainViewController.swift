@@ -39,6 +39,7 @@ protocol WallpaperMainViewControllerDelegate: AnyObject {
         settings: ImageExportSettings
     )
     func mainViewControllerShouldNotify(_ text: String)
+    func mainViewControllerUnsavedChangesDidChange(_ hasChanges: Bool)
 }
 
 // MARK: - Enums, Structs
@@ -173,6 +174,13 @@ final class WallpaperMainViewController: ViewController {
             }
         }
         return false
+    }
+
+    var hasUnsavedChanges: Bool {
+        guard initialAttributes != nil else {
+            return galleryController?.data.items.isEmpty == false
+        }
+        return canRevert
     }
 
     func revert() {
@@ -318,6 +326,7 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
     
     func dataWasChanged() {
         contentView.isCreateButtonEnabled = canCreateWallpaper
+        delegate?.mainViewControllerUnsavedChangesDidChange(hasUnsavedChanges)
     }
     
     func notify(_ text: String) {

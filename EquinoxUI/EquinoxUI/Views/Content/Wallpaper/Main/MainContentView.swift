@@ -147,9 +147,15 @@ public final class MainContentView: View {
     public var imageQuality: Int {
         return exportSettingsView.imageQuality
     }
+
+    public var encodingSettingsDidChange: (() -> Void)? {
+        get { exportSettingsView.settingsDidChange }
+        set { exportSettingsView.settingsDidChange = newValue }
+    }
 }
 
 private final class ExportSettingsView: NSView {
+    var settingsDidChange: (() -> Void)?
     private lazy var compressionScopeLabel = makeLabel(
         "Apply lossy compression to:"
     )
@@ -253,6 +259,8 @@ private final class ExportSettingsView: NSView {
             .isActive = true
         qualitySlider.controlSize = .small
         qualitySlider.isContinuous = true
+        compressionScopePopUp.target = self
+        compressionScopePopUp.action = #selector(compressionScopeChanged(_:))
 
         let compressionScopeControls = NSStackView(views: [
             compressionScopePopUp,
@@ -324,6 +332,12 @@ private final class ExportSettingsView: NSView {
         let value = "\(Int(sender.doubleValue))%"
         qualityValueButton.title = value
         popoverQualityValueLabel.stringValue = value
+        settingsDidChange?()
+    }
+
+    @objc
+    private func compressionScopeChanged(_ sender: NSPopUpButton) {
+        settingsDidChange?()
     }
 
     private func makeLabel(_ title: String) -> NSTextField {

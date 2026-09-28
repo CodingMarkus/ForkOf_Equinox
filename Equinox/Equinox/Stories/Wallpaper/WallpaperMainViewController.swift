@@ -36,7 +36,8 @@ import EquinoxUI
 protocol WallpaperMainViewControllerDelegate: AnyObject {
     func mainViewControllerCreateWasInteracted(
         _ imageAttributes: [ImageAttributes],
-        settings: ImageExportSettings
+        settings: ImageExportSettings,
+        previewURL: URL?
     )
     func mainViewControllerShouldNotify(_ text: String)
     func mainViewControllerUnsavedChangesDidChange(_ hasChanges: Bool)
@@ -56,11 +57,21 @@ extension WallpaperMainViewController {
 final class WallpaperMainViewController: ViewController {
     private let type: WallpaperType
     private let fileService: FileService
+    private let wallpaperService: WallpaperService
     private let solarService: SolarService
     private let imageProvider: ImageProvider
     private let initialAttributes: [ImageAttributes]?
     
     private weak var galleryController: WallpaperGalleryViewController?
+    private let previewQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.qualityOfService = .utility
+        queue.maxConcurrentOperationCount = 1
+        return queue
+    }()
+    private var previewRevision = 0
+    private var previewURL: URL?
+    private var lastPreviewKey: String?
 
     lazy var contentView: MainContentView = {
         let view = MainContentView()
@@ -73,12 +84,14 @@ final class WallpaperMainViewController: ViewController {
     init(
         type: WallpaperType,
         fileService: FileService,
+        wallpaperService: WallpaperService,
         solarService: SolarService,
         imageProvider: ImageProvider,
         initialAttributes: [ImageAttributes]?
     ) {
         self.type = type
         self.fileService = fileService
+        self.wallpaperService = wallpaperService
         self.solarService = solarService
         self.imageProvider = imageProvider
         self.initialAttributes = initialAttributes
@@ -96,11 +109,22 @@ final class WallpaperMainViewController: ViewController {
         setup()
     }
 
+    deinit {
+        previewQueue.cancelAllOperations()
+        if let previewURL = previewURL {
+            try? FileManager.default.removeItem(at: previewURL)
+        }
+    }
+
     // MARK: - Setup
 
     private func setup() {
         setupView()
         setupActions()
+        contentView.encodingSettingsDidChange = { [weak self] in
+            self?.scheduleSizePreview()
+        }
+        scheduleSizePreview()
     }
 
     private func setupView() {
@@ -122,24 +146,10 @@ final class WallpaperMainViewController: ViewController {
                 guard let imageAttributes = self.convertData() else {
                     return
                 }
-                let scope: LossyCompressionScope
-                switch self.contentView.compressionScopeIndex {
-                case 0:
-                    scope = .allImages
-                case 1:
-                    scope = .allButHEIC
-                case 2:
-                    scope = .lossyFormatsButHEIC
-                default:
-                    scope = .noImages
-                }
-                let settings = ImageExportSettings(
-                    lossyCompressionScope: scope,
-                    imageQuality: self.contentView.imageQuality
-                )
                 self.delegate?.mainViewControllerCreateWasInteracted(
                     imageAttributes,
-                    settings: settings
+                    settings: self.currentExportSettings,
+                    previewURL: self.previewURL
                 )
             }
         }
@@ -327,6 +337,93 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
     func dataWasChanged() {
         contentView.isCreateButtonEnabled = canCreateWallpaper
         delegate?.mainViewControllerUnsavedChangesDidChange(hasUnsavedChanges)
+        scheduleSizePreview()
+    }
+
+    private func scheduleSizePreview() {
+        let attributes = convertData() ?? []
+        let settings = currentExportSettings
+        let imageKey = attributes.map {
+            "\($0.url.path):\($0.sourceIndex ?? -1)"
+        }.joined(separator: "|")
+        let key = "\(imageKey)|\(settings.lossyCompressionScope)|" +
+            "\(settings.imageQuality)"
+        guard key != lastPreviewKey else { return }
+        lastPreviewKey = key
+        previewRevision += 1
+        let revision = previewRevision
+        previewQueue.cancelAllOperations()
+        if let previewURL = previewURL {
+            try? FileManager.default.removeItem(at: previewURL)
+            self.previewURL = nil
+        }
+        guard !attributes.isEmpty else {
+            galleryController?.setOutputSizeText("0.00 KB")
+            return
+        }
+        contentView.isCreateButtonEnabled = canCreateWallpaper
+        galleryController?.setOutputSizeText("Calculating...")
+        let operation = BlockOperation { [weak self] in
+            guard let self = self else { return }
+            Thread.sleep(forTimeInterval: 0.6)
+            guard revision == self.previewRevision else { return }
+            do {
+                let data = try self.wallpaperService.createWallpaper(
+                    attributes,
+                    settings: settings,
+                    progressCallback: nil
+                )
+                let url = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString)
+                    .appendingPathExtension("heic")
+                try data.write(to: url, options: .atomic)
+                DispatchQueue.main.async {
+                    guard revision == self.previewRevision else {
+                        try? FileManager.default.removeItem(at: url)
+                        return
+                    }
+                    if let oldURL = self.previewURL {
+                        try? FileManager.default.removeItem(at: oldURL)
+                    }
+                    self.previewURL = url
+                    let bytes = (try? url.resourceValues(
+                        forKeys: [.fileSizeKey]
+                    ))?.fileSize ?? data.count
+                    self.galleryController?.setOutputSizeText(
+                        Self.formatOutputSize(bytes)
+                    )
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    if revision == self.previewRevision {
+                        self.galleryController?.setOutputSizeText("Unavailable")
+                    }
+                }
+            }
+        }
+        previewQueue.addOperation(operation)
+    }
+
+    private var currentExportSettings: ImageExportSettings {
+        let scope: LossyCompressionScope
+        switch contentView.compressionScopeIndex {
+        case 0: scope = .allImages
+        case 1: scope = .allButHEIC
+        case 2: scope = .lossyFormatsButHEIC
+        default: scope = .noImages
+        }
+        return ImageExportSettings(
+            lossyCompressionScope: scope,
+            imageQuality: contentView.imageQuality
+        )
+    }
+
+    private static func formatOutputSize(_ bytes: Int) -> String {
+        let size = Double(bytes)
+        if size >= 1_048_576 {
+            return String(format: "%.2f MB", size / 1_048_576)
+        }
+        return String(format: "%.2f KB", size / 1_024)
     }
     
     func notify(_ text: String) {

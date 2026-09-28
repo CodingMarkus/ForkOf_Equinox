@@ -61,6 +61,7 @@ final class WallpaperCreateViewController: ViewController {
     private let imageProvider: ImageProvider
     private let exportSettings: ImageExportSettings
     private let sourceURL: URL?
+    private let previewURL: URL?
     
     private let operationQueue: OperationQueue = {
         let queue = OperationQueue()
@@ -86,7 +87,8 @@ final class WallpaperCreateViewController: ViewController {
         wallpaperService: WallpaperService,
         imageProvider: ImageProvider,
         exportSettings: ImageExportSettings,
-        sourceURL: URL?
+        sourceURL: URL?,
+        previewURL: URL? = nil
     ) {
         self.type = type
         self.imageAttributes = imageAttributes
@@ -94,6 +96,7 @@ final class WallpaperCreateViewController: ViewController {
         self.imageProvider = imageProvider
         self.exportSettings = exportSettings
         self.sourceURL = sourceURL
+        self.previewURL = previewURL
         super.init()
     }
 
@@ -106,7 +109,13 @@ final class WallpaperCreateViewController: ViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setup()
-        createWallpaper()
+        if let previewURL = previewURL,
+           let preview = try? Data(contentsOf: previewURL) {
+            createdImage = preview
+            completeWallpaperCreation()
+        } else {
+            createWallpaper()
+        }
     }
 
     // MARK: - Setup

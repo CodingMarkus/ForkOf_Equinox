@@ -168,6 +168,7 @@ final class WallpaperRootViewController: ViewController {
         let controller = WallpaperMainViewController(
             type: type,
             fileService: fileService,
+            wallpaperService: wallpaperService,
             solarService: solarService,
             imageProvider: imageProvider,
             initialAttributes: initialAttributes
@@ -207,7 +208,8 @@ final class WallpaperRootViewController: ViewController {
 
     private func presentCreateController(
         _ imageAttributes: [ImageAttributes],
-        settings: ImageExportSettings
+        settings: ImageExportSettings,
+        previewURL: URL? = nil
     ) {
         guard createViewController == nil else {
             return
@@ -218,7 +220,8 @@ final class WallpaperRootViewController: ViewController {
             wallpaperService: wallpaperService,
             imageProvider: imageProvider,
             exportSettings: settings,
-            sourceURL: initialAttributes?.first?.url
+            sourceURL: initialAttributes?.first?.url,
+            previewURL: previewURL
         )
         createViewController = controller
         controller.delegate = self
@@ -239,9 +242,14 @@ extension WallpaperRootViewController: WallpaperMainViewControllerDelegate {
 
     func mainViewControllerCreateWasInteracted(
         _ imageAttributes: [ImageAttributes],
-        settings: ImageExportSettings
+        settings: ImageExportSettings,
+        previewURL: URL?
     ) {
-        presentCreateController(imageAttributes, settings: settings)
+        presentCreateController(
+            imageAttributes,
+            settings: settings,
+            previewURL: previewURL
+        )
     }
 
     func mainViewControllerBackWasInteracted() {

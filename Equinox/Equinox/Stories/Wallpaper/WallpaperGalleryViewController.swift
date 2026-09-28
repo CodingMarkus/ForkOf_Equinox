@@ -63,7 +63,6 @@ final class WallpaperGalleryViewController: ViewController {
     }()
     private lazy var dataController = WallpaperGalleryDataController(
         type: type,
-        fileService: fileService,
         solarService: solarService,
         imageProvider: imageProvider
     )
@@ -151,6 +150,11 @@ final class WallpaperGalleryViewController: ViewController {
     
     var data: GalleryData {
         return dataController.data
+    }
+
+    func setOutputSizeText(_ text: String) {
+        dataController.setOutputSizeText(text)
+        contentView.reloadCollection(dataController.data, type: .hard)
     }
 
     func replace(with attributes: [ImageAttributes]) {

@@ -227,9 +227,9 @@ private final class ExportSettingsView: NSView {
             "No images"
         ])
         compressionScopePopUp.controlSize = .regular
-        compressionScopePopUp.alignment = .center
+        compressionScopePopUp.alignment = .left
         let menuTitleStyle = NSMutableParagraphStyle()
-        menuTitleStyle.alignment = .center
+        menuTitleStyle.alignment = .left
         for item in compressionScopePopUp.itemArray {
             item.attributedTitle = NSAttributedString(
                 string: item.title,

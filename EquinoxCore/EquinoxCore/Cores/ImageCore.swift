@@ -123,7 +123,7 @@ public final class ImageCoreImpl: ImageCore {
         let containsHEIC = try attributes.contains {
             try isHEICImage(at: $0.url)
         }
-        if containsHEIC {
+        if containsHEIC && preserveHEIC {
             return try createHEICFrames(
                 from: attributes,
                 metadata: metadata,
@@ -393,7 +393,8 @@ public final class ImageCoreImpl: ImageCore {
                 for: attribute,
                 settings: settings
             )
-            if try isHEICImage(at: attribute.url) {
+            let isHEIC = try isHEICImage(at: attribute.url)
+            if isHEIC && settings.lossyCompressionScope != .allImages {
                 guard let source = CGImageSourceCreateWithURL(
                     attribute.url as CFURL,
                     nil
@@ -418,7 +419,7 @@ public final class ImageCoreImpl: ImageCore {
                 let image = try readImage(from: attribute.url,
                                           index: attribute.sourceIndex)
 
-                if index == 0 {
+                if index == 0 && !isHEIC {
                     CGImageDestinationAddImageAndMetadata(
                         destination,
                         image,

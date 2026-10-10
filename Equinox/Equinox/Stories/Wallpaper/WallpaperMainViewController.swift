@@ -60,7 +60,7 @@ final class WallpaperMainViewController: ViewController {
     private let wallpaperService: WallpaperService
     private let solarService: SolarService
     private let imageProvider: ImageProvider
-    private let initialAttributes: [ImageAttributes]?
+    private var savedAttributes: [ImageAttributes]?
     
     private weak var galleryController: WallpaperGalleryViewController?
     private let previewQueue: OperationQueue = {
@@ -94,7 +94,7 @@ final class WallpaperMainViewController: ViewController {
         self.wallpaperService = wallpaperService
         self.solarService = solarService
         self.imageProvider = imageProvider
-        self.initialAttributes = initialAttributes
+        self.savedAttributes = initialAttributes
         super.init()
     }
 
@@ -160,10 +160,10 @@ final class WallpaperMainViewController: ViewController {
     weak var delegate: WallpaperMainViewControllerDelegate?
 
     var canRevert: Bool {
-        guard let initial = initialAttributes,
+        guard let initial = savedAttributes,
               let current = convertData(),
               initial.count == current.count else {
-            return initialAttributes != nil
+            return savedAttributes != nil
         }
         for (saved, edited) in zip(initial, current) {
             if saved.url != edited.url
@@ -187,15 +187,20 @@ final class WallpaperMainViewController: ViewController {
     }
 
     var hasUnsavedChanges: Bool {
-        guard initialAttributes != nil else {
+        guard savedAttributes != nil else {
             return galleryController?.data.items.isEmpty == false
         }
         return canRevert
     }
 
     func revert() {
-        guard let initial = initialAttributes else { return }
+        guard let initial = savedAttributes else { return }
         galleryController?.replace(with: initial)
+    }
+
+    func markSaved() {
+        savedAttributes = convertData()
+        delegate?.mainViewControllerUnsavedChangesDidChange(hasUnsavedChanges)
     }
 
     // MARK: - Private
@@ -277,7 +282,7 @@ final class WallpaperMainViewController: ViewController {
         galleryController = controller
         controller.delegate = self
         addChildController(controller, container: contentView.containerView)
-        if let initial = initialAttributes {
+        if let initial = savedAttributes {
             DispatchQueue.main.async { [weak controller] in
                 controller?.view.layoutSubtreeIfNeeded()
                 controller?.replace(with: initial)

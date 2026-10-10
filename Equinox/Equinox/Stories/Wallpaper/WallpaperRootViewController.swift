@@ -295,6 +295,10 @@ extension WallpaperRootViewController: WallpaperCreateViewControllerDelegate {
     func createViewControllerShouldNotify(_ text: String) {
         delegate?.rootViewControllerShouldNotify(text)
     }
+
+    func createViewControllerDidSave() {
+        mainViewController?.markSaved()
+    }
 }
 
 // MARK: - TipViewControllerDelegate

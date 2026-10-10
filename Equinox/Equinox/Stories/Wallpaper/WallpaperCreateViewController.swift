@@ -40,6 +40,7 @@ protocol WallpaperCreateViewControllerDelegate: AnyObject {
     func createViewControllerSetWasInteracted()
     func createViewControllerRepeatWasInteracted()
     func createViewControllerShouldNotify(_ text: String)
+    func createViewControllerDidSave()
 }
 
 // MARK: - Enums, Structs
@@ -303,6 +304,7 @@ final class WallpaperCreateViewController: ViewController {
                 if notify {
                     self.delegate?.createViewControllerShouldNotify(Localization.Wallpaper.Create.fileSaved)
                 }
+                self.delegate?.createViewControllerDidSave()
                 completion?(finalURL)
             } catch {
                 completion?(nil)

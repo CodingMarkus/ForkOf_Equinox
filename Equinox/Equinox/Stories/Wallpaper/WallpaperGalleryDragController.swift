@@ -330,7 +330,10 @@ extension WallpaperGalleryDragController: GalleryCollectionContentViewDelegate {
         guard
             let pasteboardItem = sender.draggingPasteboard.pasteboardItems?.first,
             let pasteboardData = pasteboardItem.data(forType: Constants.solarDragType),
-            let unarchivedData = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSArray.self, from: pasteboardData),
+            let unarchivedData = try? NSKeyedUnarchiver.unarchivedObject(
+                ofClasses: [NSArray.self, NSString.self],
+                from: pasteboardData
+            ),
             let results = unarchivedData as? [String],
             let azimuthString = results.first,
             let altitudeString = results.last,

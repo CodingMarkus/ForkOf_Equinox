@@ -441,21 +441,10 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         
         let items = dataController.make(validatedUrls, insertIndexPath: insertIndexPath)
         let models = items.map { $0.model }
-        let indexPaths = items.map { $0.indexPath }
         
         dataController.insert(models, at: insertIndexPath.item)
         refreshData()
-        
-        contentView.performCollectionUpdates({ [weak self] in
-            let indexPathsSet = Set(indexPaths)
-            self?.contentView.insertCollectionItems(at: indexPathsSet)
-            self?.contentView.deselectCollectionItems(at: indexPathsSet)
-        }, completion: { [weak self] _ in
-            guard let self = self else {
-                return
-            }
-            self.contentView.reloadCollection(self.dataController.data, type: .hard)
-        })
+        contentView.reloadCollection(dataController.data, type: .hard)
     }
 
     func deleteCollectionItems() {

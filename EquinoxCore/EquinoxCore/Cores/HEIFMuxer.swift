@@ -55,8 +55,8 @@ enum HEIFMuxer {
 			  sources.count < Int(UInt16.max) else { return nil }
 
 		do {
-			let images = try sources.map(readPrimaryImage)
-			return try write(images, xmp: xmp)
+			let frames = try sources.map { try readFrame($0, at: 0) }
+			return try write(frames, xmp: xmp)
 		} catch {
 			return nil
 		}
@@ -70,10 +70,10 @@ enum HEIFMuxer {
 				sources.count < Int(UInt16.max) else { return nil }
 
 		do {
-			let images = try sources.map { source in
-				try readImage(source.data, at: source.index)
+			let frames = try sources.map { source in
+				try readFrame(source.data, at: source.index)
 			}
-			return try write(images, xmp: xmp)
+			return try write(frames, xmp: xmp)
 		} catch {
 			return nil
 		}
@@ -87,11 +87,10 @@ enum HEIFMuxer {
 		guard index >= 0 else { return nil }
 		do {
 			if let grid = try readGridFrame(data, at: index) {
-				return try write(grid, xmp: nil,
-								 gridTileCount: grid.count - 1)
+				return try write([grid], xmp: nil)
 			}
 			let image = try readImage(data, at: index)
-			return try write([image], xmp: nil)
+			return try write([[image]], xmp: nil)
 		} catch {
 			return nil
 		}
@@ -99,6 +98,17 @@ enum HEIFMuxer {
 
 	private static func readPrimaryImage(_ data: Data) throws -> ImageItem {
 		try readImage(data, at: nil)
+	}
+
+	private static func readFrame(
+		_ data: Data,
+		at index: Int
+	) throws -> [ImageItem] {
+		if let grid = try readGridFrame(data, at: index) {
+			return grid
+		}
+		let imageIndex: Int? = index == 0 ? nil : index
+		return [try readImage(data, at: imageIndex)]
 	}
 
 	private static func readImage(
@@ -270,20 +280,23 @@ enum HEIFMuxer {
 	}
 
 	private static func write(
-		_ images: [ImageItem],
-		xmp: Data?,
-		gridTileCount: Int = 0
+		_ frames: [[ImageItem]],
+		xmp: Data?
 	) throws -> Data {
+		let images = frames.flatMap { $0 }
 		guard images.count < Int(UInt16.max),
-				gridTileCount < Int(UInt16.max),
+				!frames.isEmpty,
+				frames.allSatisfy({ !$0.isEmpty }),
 				(xmp?.count ?? 0) <= Int(UInt32.max) - 8,
 				images.allSatisfy({ $0.properties.count <= Int(UInt8.max) })
 		else { throw MuxError.overflow }
 
-		var items = images.enumerated().map { index, image in
-			(type: image.type, name: "", contentType: nil as String?,
-			 data: image.bytes, properties: image.properties,
-			 hidden: gridTileCount > 0 && index > 0)
+		var items = frames.flatMap { frame in
+			frame.enumerated().map { index, image in
+				(type: image.type, name: "",
+				 contentType: nil as String?, data: image.bytes,
+				 properties: image.properties, hidden: index > 0)
+			}
 		}
 		let primaryID: UInt32 = 1
 		let metadataID = UInt16(images.count + 1)
@@ -364,13 +377,18 @@ enum HEIFMuxer {
 							   body: itemInfoBody)
 
 		var references = Data()
-		if gridTileCount > 0 {
-			var referenceBody = be16(UInt16(primaryID))
-			referenceBody.append(be16(UInt16(gridTileCount)))
-			for index in 0..<gridTileCount {
-				referenceBody.append(be16(UInt16(index + 2)))
+		var frameStart = 0
+		for frame in frames {
+			let tileCount = frame.count - 1
+			if tileCount > 0 {
+				var body = be16(UInt16(frameStart + 1))
+				body.append(be16(UInt16(tileCount)))
+				for index in 0..<tileCount {
+					body.append(be16(UInt16(frameStart + index + 2)))
+				}
+				references.append(box("dimg", body))
 			}
-			references.append(box("dimg", referenceBody))
+			frameStart += frame.count
 		}
 		if xmp != nil {
 			var referenceBody = be16(metadataID)

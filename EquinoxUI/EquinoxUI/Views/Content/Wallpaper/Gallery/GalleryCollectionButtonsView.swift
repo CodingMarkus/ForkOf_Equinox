@@ -334,7 +334,11 @@ public final class GalleryCollectionButtonsView: View {
         }
         set {
             primaryButton.isSelected = newValue
-            previewIconView.isHidden = !newValue
+            updateSymbol(
+                previewIconView,
+                name: "magnifyingglass",
+                selected: newValue
+            )
         }
     }
 
@@ -388,9 +392,8 @@ public final class GalleryCollectionButtonsView: View {
             accessibilityDescription: nil
         )?.withSymbolConfiguration(configuration)
         imageView.image?.isTemplate = true
-        imageView.contentTintColor = .white
+        imageView.contentTintColor = .tertiaryLabelColor
         imageView.imageScaling = .scaleProportionallyDown
-        imageView.isHidden = true
         return imageView
     }
 
@@ -422,7 +425,24 @@ public final class GalleryCollectionButtonsView: View {
     private func updateAppearanceButtons(light: Bool, dark: Bool) {
         lightButton.isSelected = light
         darkButton.isSelected = dark
-        lightIconView.isHidden = !light
-        darkIconView.isHidden = !dark
+        updateSymbol(lightIconView, name: "sun.max.fill", selected: light)
+        updateSymbol(darkIconView, name: "moon.fill", selected: dark)
+    }
+
+    private func updateSymbol(
+        _ imageView: NSImageView,
+        name: String,
+        selected: Bool
+    ) {
+        let configuration = NSImage.SymbolConfiguration(
+            pointSize: 16,
+            weight: selected ? .bold : .regular
+        )
+        imageView.image = NSImage(
+            systemSymbolName: name,
+            accessibilityDescription: nil
+        )?.withSymbolConfiguration(configuration)
+        imageView.image?.isTemplate = true
+        imageView.contentTintColor = selected ? .white : .tertiaryLabelColor
     }
 }

@@ -331,6 +331,10 @@
 "wallpaper.main.validate" = "請填寫所有欄位";
 "wallpaper.main.size.calculating" = "正在計算...";
 "wallpaper.main.size.unavailable" = "無法使用";
+"wallpaper.main.compression.all.images" = "所有影像";
+"wallpaper.main.compression.all.but.heic" = "除 HEIC 外全部";
+"wallpaper.main.compression.lossy.but.heic" = "HEIC 以外的有損格式";
+"wallpaper.main.compression.none" = "沒有影像";
 
 /* (No Comment) */
 "wallpaper.set.continue" = "繼續";

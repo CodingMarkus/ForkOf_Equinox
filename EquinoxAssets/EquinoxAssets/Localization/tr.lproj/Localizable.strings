@@ -62,6 +62,10 @@
 "wallpaper.main.validate" = "Lütfen tüm alanları doldurun";
 "wallpaper.main.size.calculating" = "Hesaplanıyor...";
 "wallpaper.main.size.unavailable" = "Kullanılamıyor";
+"wallpaper.main.compression.all.images" = "Tüm görüntüler";
+"wallpaper.main.compression.all.but.heic" = "HEIC hariç tümü";
+"wallpaper.main.compression.lossy.but.heic" = "HEIC hariç kayıplı biçimler";
+"wallpaper.main.compression.none" = "Görüntü yok";
 
 "wallpaper.gallery.drag.title" = "Fotoğraflarınızı sürükleyip bırakın";
 "wallpaper.gallery.drag.supplementary" = "Dosyalar png, jpeg, tiff veya heif formatında olmalıdır.";

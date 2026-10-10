@@ -62,6 +62,10 @@
 "wallpaper.main.validate" = "すべての項目を入力してください";
 "wallpaper.main.size.calculating" = "計算中...";
 "wallpaper.main.size.unavailable" = "利用できません";
+"wallpaper.main.compression.all.images" = "すべての画像";
+"wallpaper.main.compression.all.but.heic" = "HEIC以外すべて";
+"wallpaper.main.compression.lossy.but.heic" = "HEIC以外の非可逆形式";
+"wallpaper.main.compression.none" = "画像なし";
 
 "wallpaper.gallery.drag.title" = "画像をドラッグ＆ドロップ";
 "wallpaper.gallery.drag.supplementary" = "PNG、JPEG、TIFF、HEIC形式のファイルを使用してください。";

@@ -33,11 +33,14 @@ import AppKit
 extension MainContentView {
     public struct Style {
         let bottomBarStyle: BottomBarView.Style
+        let compressionScopeTitles: [String]
 
         public init(
-            bottomBarStyle: BottomBarView.Style
+            bottomBarStyle: BottomBarView.Style,
+            compressionScopeTitles: [String]
         ) {
             self.bottomBarStyle = bottomBarStyle
+            self.compressionScopeTitles = compressionScopeTitles
         }
     }
 
@@ -110,6 +113,11 @@ public final class MainContentView: View {
     public var active: Bool {
         get {
             return visualEffectView.active
+            if let style = style {
+                exportSettingsView.setCompressionScopeTitles(
+                    style.compressionScopeTitles
+                )
+            }
         }
         set {
             visualEffectView.active = newValue
@@ -226,12 +234,6 @@ private final class ExportSettingsView: NSView {
     }
 
     private func setup() {
-        compressionScopePopUp.addItems(withTitles: [
-            "All images",
-            "All but HEIC",
-            "Lossy formats but HEIC",
-            "No images"
-        ])
         compressionScopePopUp.controlSize = .regular
         compressionScopePopUp.alignment = .left
         let menuTitleStyle = NSMutableParagraphStyle()
@@ -334,6 +336,24 @@ private final class ExportSettingsView: NSView {
         popoverQualityValueLabel.stringValue = value
         settingsDidChange?()
     }
+    func setCompressionScopeTitles(_ titles: [String]) {
+        guard titles.count == 4 else { return }
+        compressionScopeWidthConstraint?.isActive = false
+        compressionScopePopUp.removeAllItems()
+        compressionScopePopUp.addItems(withTitles: titles)
+        let optionFont = NSFont.systemFont(ofSize: 13)
+        let widestTitleWidth = titles.map {
+            titleWidth($0, font: optionFont)
+        }.max() ?? 0
+        compressionScopeWidthConstraint?.constant = widestTitleWidth + 48
+        compressionScopeWidthConstraint?.isActive = true
+        settingsRows?.layoutSubtreeIfNeeded()
+        compressionScopePopUp.selectItem(at: 2)
+        settingsRows?.layoutSubtreeIfNeeded()
+        settingsWidthConstraint?.constant =
+            settingsRows?.fittingSize.width ?? widestTitleWidth + 48
+    }
+
 
     @objc
     private func compressionScopeChanged(_ sender: NSPopUpButton) {

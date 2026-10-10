@@ -62,6 +62,10 @@
 "wallpaper.main.validate" = "모든 항목을 채워주세요";
 "wallpaper.main.size.calculating" = "계산 중...";
 "wallpaper.main.size.unavailable" = "사용할 수 없음";
+"wallpaper.main.compression.all.images" = "모든 이미지";
+"wallpaper.main.compression.all.but.heic" = "HEIC 제외 모두";
+"wallpaper.main.compression.lossy.but.heic" = "HEIC를 제외한 손실 압축 형식";
+"wallpaper.main.compression.none" = "이미지 없음";
 
 "wallpaper.gallery.drag.title" = "이미지 드래그 & 드랍";
 "wallpaper.gallery.drag.supplementary" = "파일 확장자는 png, jpeg, tiff, heif만을 지원합니다.";

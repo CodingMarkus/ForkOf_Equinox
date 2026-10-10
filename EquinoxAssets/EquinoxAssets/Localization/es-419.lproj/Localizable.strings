@@ -62,6 +62,10 @@
 "wallpaper.main.validate" = "Por favor, rellene todos los campos";
 "wallpaper.main.size.calculating" = "Calculando...";
 "wallpaper.main.size.unavailable" = "No disponible";
+"wallpaper.main.compression.all.images" = "Todas las imágenes";
+"wallpaper.main.compression.all.but.heic" = "Todas excepto HEIC";
+"wallpaper.main.compression.lossy.but.heic" = "Formatos con pérdida excepto HEIC";
+"wallpaper.main.compression.none" = "Ninguna imagen";
 
 "wallpaper.gallery.drag.title" = "Arrastrar y soltar sus imágenes";
 "wallpaper.gallery.drag.supplementary" = "Los archivos deben ser png, jpeg, tiff o heif.";

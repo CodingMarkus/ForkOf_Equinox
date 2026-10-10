@@ -176,6 +176,19 @@ public enum Localization {
             public static let sizeUnavailable = Localization.localizedString(
                 key: "wallpaper.main.size.unavailable"
             )
+            public static let compressionAllImages = Localization.localizedString(
+                key: "wallpaper.main.compression.all.images"
+            )
+            public static let compressionAllButHEIC = Localization.localizedString(
+                key: "wallpaper.main.compression.all.but.heic"
+            )
+            public static let compressionLossyFormatsButHEIC =
+                Localization.localizedString(
+                    key: "wallpaper.main.compression.lossy.but.heic"
+                )
+            public static let compressionNone = Localization.localizedString(
+                key: "wallpaper.main.compression.none"
+            )
         }
         
         public enum Gallery {

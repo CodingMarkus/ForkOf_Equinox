@@ -62,6 +62,10 @@
 "wallpaper.main.validate" = "请填写所有字段";
 "wallpaper.main.size.calculating" = "正在计算...";
 "wallpaper.main.size.unavailable" = "不可用";
+"wallpaper.main.compression.all.images" = "所有图像";
+"wallpaper.main.compression.all.but.heic" = "除 HEIC 外全部";
+"wallpaper.main.compression.lossy.but.heic" = "HEIC 以外的有损格式";
+"wallpaper.main.compression.none" = "没有图像";
 
 "wallpaper.gallery.drag.title" = "拖放你的图像";
 "wallpaper.gallery.drag.supplementary" = "支持这些格式：png, jpeg, tiff, heif.";

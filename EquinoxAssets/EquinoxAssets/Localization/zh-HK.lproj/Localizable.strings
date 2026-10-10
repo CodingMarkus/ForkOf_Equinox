@@ -448,3 +448,6 @@
 "wallpaper.gallery.tooltip.light.description" = "在淺色外觀下將此圖片用作桌面圖片。在 Solar 或 Time 背景圖片中，未標記的圖片仍會保留在序列內。";
 "wallpaper.gallery.tooltip.dark.title" = "深色桌面";
 "wallpaper.gallery.tooltip.dark.description" = "在深色外觀下將此圖片用作桌面圖片。在 Solar 或 Time 背景圖片中，未標記的圖片仍會保留在序列內。";
+
+"wallpaper.gallery.menu.export" = "匯出影像…";
+"wallpaper.gallery.menu.delete" = "刪除影像";

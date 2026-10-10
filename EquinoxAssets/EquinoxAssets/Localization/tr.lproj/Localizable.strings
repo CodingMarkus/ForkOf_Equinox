@@ -203,3 +203,6 @@
 "wallpaper.gallery.tooltip.light.description" = "Bu görüntüyü açık görünümde masaüstü resmi olarak kullan. Solar veya Time duvar kağıtlarında işaretsiz görüntüler sırada kalır.";
 "wallpaper.gallery.tooltip.dark.title" = "Koyu masaüstü";
 "wallpaper.gallery.tooltip.dark.description" = "Bu görüntüyü koyu görünümde masaüstü resmi olarak kullan. Solar veya Time duvar kağıtlarında işaretsiz görüntüler sırada kalır.";
+
+"wallpaper.gallery.menu.export" = "Görselleri dışa aktar…";
+"wallpaper.gallery.menu.delete" = "Görselleri sil";

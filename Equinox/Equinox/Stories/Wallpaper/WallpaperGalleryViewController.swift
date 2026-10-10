@@ -32,6 +32,39 @@ import EquinoxCore
 import EquinoxUI
 import UniformTypeIdentifiers
 
+private final class SelectionCountMenuItemView: NSView {
+    private let titleField: NSTextField
+
+    init(title: String) {
+        titleField = NSTextField(labelWithString: title)
+        super.init(frame: .zero)
+
+        titleField.font = .systemFont(
+            ofSize: NSFont.systemFontSize,
+            weight: .semibold
+        )
+        titleField.textColor = .labelColor
+        titleField.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(titleField)
+
+        NSLayoutConstraint.activate([
+            titleField.centerXAnchor.constraint(equalTo: centerXAnchor),
+            titleField.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    override var intrinsicContentSize: NSSize {
+        return NSSize(
+            width: titleField.fittingSize.width + 44,
+            height: 24
+        )
+    }
+}
+
 // MARK: - Protocols
 
 protocol WallpaperGalleryViewControllerDelegate: AnyObject {
@@ -554,12 +587,26 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         let count = contentView.selectedIndexPaths.count
         
         menu.removeAllItems()
+        if count > 1 {
+            let selectionTitle = Localization.Wallpaper.Gallery
+                .menuSelectedItems(param1: count)
+            let selectionItem = NSMenuItem()
+            let selectionView = SelectionCountMenuItemView(
+                title: selectionTitle
+            )
+            selectionView.frame.size = selectionView.intrinsicContentSize
+            selectionItem.view = selectionView
+            menu.addItem(selectionItem)
+            menu.addItem(.separator())
+        }
         let exportableCount = contentView.selectedIndexPaths
             .filter { filePromiseDetails(at: $0) != nil }
             .count
         if count > 0, exportableCount == count {
             let exportItem = NSMenuItem(
-                title: Localization.Wallpaper.Gallery.menuExport(param1: count),
+                title: Localization.Wallpaper.Gallery.menuExport(
+                    param1: count
+                ),
                 action: #selector(collectionMenuExportImage(_:)),
                 keyEquivalent: String()
             )
@@ -567,7 +614,9 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
             menu.addItem(exportItem)
         }
         let item = NSMenuItem(
-            title: Localization.Wallpaper.Gallery.menuDelete(param1: count),
+            title: Localization.Wallpaper.Gallery.menuDelete(
+                param1: count
+            ),
             action: #selector(collectionMenuDeleteItems(_:)),
             keyEquivalent: String()
         )

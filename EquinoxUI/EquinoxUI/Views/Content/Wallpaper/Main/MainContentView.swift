@@ -264,7 +264,10 @@ private final class ExportSettingsView: NSView {
                 attributes: [.paragraphStyle: menuTitleStyle]
             )
         }
-        let compressionScopeWidth = compressionScopePopUp.frame.width
+        let compressionScopeWidth = max(
+            compressionScopePopUp.frame.width,
+            compressionScopePopUp.intrinsicContentSize.width
+        )
         compressionHelpButton.widthAnchor.constraint(equalToConstant: 24)
             .isActive = true
         compressionHelpButton.heightAnchor.constraint(equalToConstant: 24)
@@ -319,7 +322,9 @@ private final class ExportSettingsView: NSView {
         qualityValueButton.widthAnchor.constraint(equalToConstant: 60)
             .isActive = true
         let settingsWidth = widthAnchor.constraint(
-            equalToConstant: rows.fittingSize.width
+            equalToConstant: requiredSettingsWidth(
+                compressionScopeWidth: compressionScopeWidth
+            )
         )
         settingsWidth.isActive = true
         settingsWidthConstraint = settingsWidth
@@ -350,8 +355,24 @@ private final class ExportSettingsView: NSView {
         settingsRows?.layoutSubtreeIfNeeded()
         compressionScopePopUp.selectItem(at: 2)
         settingsRows?.layoutSubtreeIfNeeded()
-        settingsWidthConstraint?.constant =
-            settingsRows?.fittingSize.width ?? widestTitleWidth + 48
+        settingsWidthConstraint?.constant = requiredSettingsWidth(
+            compressionScopeWidth: widestTitleWidth + 48
+        )
+    }
+
+    private func requiredSettingsWidth(
+        compressionScopeWidth: CGFloat
+    ) -> CGFloat {
+        let popupWidth = max(
+            compressionScopeWidth,
+            compressionScopePopUp.intrinsicContentSize.width
+        )
+        let compressionRowWidth = compressionScopeLabel.fittingSize.width
+            + 8 + popupWidth + 4 + 24
+        let qualityRowWidth = qualityLabel.fittingSize.width
+            + 8 + qualitySlider.fittingSize.width + 8
+            + qualityValueButton.fittingSize.width
+        return max(compressionRowWidth, qualityRowWidth)
     }
 
     @objc

@@ -203,3 +203,6 @@
 "wallpaper.gallery.tooltip.light.description" = "在浅色外观下将此图像用作桌面图片。在 Solar 或 Time 壁纸中，未标记的图像仍会保留在序列中。";
 "wallpaper.gallery.tooltip.dark.title" = "深色桌面";
 "wallpaper.gallery.tooltip.dark.description" = "在深色外观下将此图像用作桌面图片。在 Solar 或 Time 壁纸中，未标记的图像仍会保留在序列中。";
+
+"wallpaper.gallery.menu.export" = "导出图像…";
+"wallpaper.gallery.menu.delete" = "删除图像";

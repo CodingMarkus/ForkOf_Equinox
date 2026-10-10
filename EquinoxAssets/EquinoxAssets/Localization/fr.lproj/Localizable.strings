@@ -203,3 +203,6 @@
 "wallpaper.gallery.tooltip.light.description" = "Utiliser cette image comme fond en apparence claire. Dans les fonds Solaires ou Horaires, les images sans marqueur restent dans la séquence.";
 "wallpaper.gallery.tooltip.dark.title" = "Bureau sombre";
 "wallpaper.gallery.tooltip.dark.description" = "Utiliser cette image comme fond en apparence sombre. Dans les fonds Solaires ou Horaires, les images sans marqueur restent dans la séquence.";
+
+"wallpaper.gallery.menu.export" = "Exporter les images…";
+"wallpaper.gallery.menu.delete" = "Supprimer les images";

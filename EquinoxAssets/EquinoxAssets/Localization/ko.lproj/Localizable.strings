@@ -203,3 +203,6 @@
 "wallpaper.gallery.tooltip.light.description" = "라이트 화면 모드에서 데스크탑 이미지로 사용합니다. Solar 또는 Time 배경화면에서는 표시가 없는 이미지도 순서에 포함됩니다.";
 "wallpaper.gallery.tooltip.dark.title" = "다크 데스크탑";
 "wallpaper.gallery.tooltip.dark.description" = "다크 화면 모드에서 데스크탑 이미지로 사용합니다. Solar 또는 Time 배경화면에서는 표시가 없는 이미지도 순서에 포함됩니다.";
+
+"wallpaper.gallery.menu.export" = "이미지 내보내기…";
+"wallpaper.gallery.menu.delete" = "이미지 삭제";

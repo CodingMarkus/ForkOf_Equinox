@@ -193,6 +193,11 @@ public enum Localization {
         
         public enum Gallery {
             public static func menuExport(param1: Int) -> String {
+                if param1 > 1 {
+                    return Localization.localizedString(
+                        key: "wallpaper.gallery.menu.export"
+                    )
+                }
                 return String(
                     format: Localization.localizedString(key: "export"),
                     arguments: [param1]
@@ -200,7 +205,21 @@ public enum Localization {
             }
 
             public static func menuDelete(param1: Int) -> String {
+                if param1 > 1 {
+                    return Localization.localizedString(
+                        key: "wallpaper.gallery.menu.delete"
+                    )
+                }
                 return String(format: Localization.localizedString(key: "delete"), arguments: [param1])
+            }
+
+            public static func menuSelectedItems(param1: Int) -> String {
+                return String(
+                    format: Localization.localizedString(
+                        key: "wallpaper.gallery.menu.selected.items"
+                    ),
+                    arguments: [param1]
+                )
             }
             
             public static func wrongImagesType(param1: Int) -> String {

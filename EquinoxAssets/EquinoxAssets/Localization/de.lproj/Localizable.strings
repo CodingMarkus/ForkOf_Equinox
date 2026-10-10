@@ -199,3 +199,6 @@
 "wallpaper.gallery.tooltip.light.description" = "Dieses Bild bei heller Erscheinung als Schreibtischbild verwenden. In Solar- oder Zeit-Hintergrundbildern bleiben nicht markierte Bilder in der Sequenz.";
 "wallpaper.gallery.tooltip.dark.title" = "Dunkler Schreibtisch";
 "wallpaper.gallery.tooltip.dark.description" = "Dieses Bild bei dunkler Erscheinung als Schreibtischbild verwenden. In Solar- oder Zeit-Hintergrundbildern bleiben nicht markierte Bilder in der Sequenz.";
+
+"wallpaper.gallery.menu.export" = "Bilder exportieren…";
+"wallpaper.gallery.menu.delete" = "Bilder löschen";

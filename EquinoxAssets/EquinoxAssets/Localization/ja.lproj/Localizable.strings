@@ -203,3 +203,6 @@
 "wallpaper.gallery.tooltip.light.description" = "ライトの外観でデスクトップ画像として使います。SolarまたはTime壁紙では、マークのない画像も切り替え順に含まれます。";
 "wallpaper.gallery.tooltip.dark.title" = "ダークデスクトップ";
 "wallpaper.gallery.tooltip.dark.description" = "ダークの外観でデスクトップ画像として使います。SolarまたはTime壁紙では、マークのない画像も切り替え順に含まれます。";
+
+"wallpaper.gallery.menu.export" = "画像を書き出す…";
+"wallpaper.gallery.menu.delete" = "画像を削除";

@@ -35,6 +35,9 @@
 "menu.help.macAppStoreReview" = "Rate Equinox on the Mac App Store";
 "menu.help.productHunt" = "Equinox on Product Hunt";
 
+"wallpaper.gallery.menu.export" = "Export images…";
+"wallpaper.gallery.menu.delete" = "Delete images";
+
 "toolbar.more" = "More";
 
 "welcome.title" = "Welcome to Equinox";

@@ -152,6 +152,10 @@ final class WallpaperGalleryViewController: ViewController {
         return dataController.data
     }
 
+    var infoText: String {
+        return dataController.data.info
+    }
+
     func setOutputSizeText(_ text: String) {
         dataController.setOutputSizeText(text)
         contentView.reloadCollection(dataController.data, type: .hard)

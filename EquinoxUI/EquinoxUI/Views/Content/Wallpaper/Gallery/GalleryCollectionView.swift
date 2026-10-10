@@ -86,10 +86,7 @@ extension GalleryCollectionView {
     }
 
     private enum Constants {
-        static let footerHeight: CGFloat = 72
-        static let pinFooterOffset: CGFloat = 20
         static let visibilityAnimationDuration: TimeInterval = 0.2
-        static let footerAnimationDelay: TimeInterval = 1
     }
 
     // macOS 26 scroll edge effects are backed by this AppKit internal view.
@@ -119,8 +116,6 @@ public final class GalleryCollectionView: NSScrollView {
         return dataSource
     }()
     
-    private var footerHideWorkItem: DispatchWorkItem?
-
     // MARK: - Initializer
 
     public init() {
@@ -246,18 +241,10 @@ public final class GalleryCollectionView: NSScrollView {
     public func reload(_ data: GalleryData, type: ReloadType) {
         dataSource.reload(data, type: type)
 
-        switch type {
-        case .hard, .visible:
-            updateFooterPin()
-
-        case .soft:
-            break
-        }
     }
 
     public func performUpdates(_ updates: PerformUpdateAction, completion: PerformUpdateCompletionAction?) {
         dataSource.performUpdates(updates, completion: completion)
-        updateFooterPin()
     }
 
     public func insertItems(at indexPaths: Set<IndexPath>) {
@@ -291,39 +278,6 @@ public final class GalleryCollectionView: NSScrollView {
 
     // MARK: - Private
 
-    private func updateFooterPin() {
-        let views: [NSView] = collectionView.visibleSupplementaryViews(ofKind: NSCollectionView.elementKindSectionFooter)
-        guard let footerView = views.first as? GalleryCollectionFooterItem else {
-            return
-        }
-        updateFooterPin(footerView: footerView)
-    }
-
-    private func updateFooterPin(footerView: GalleryCollectionFooterItem) {
-        let offset = documentVisibleRect.origin.y + frame.height
-        let shouldAutoHide = offset < collectionLayout.collectionViewContentSize.height - Constants.pinFooterOffset
-        
-        footerView.animate(isHidden: false)
-        
-        footerHideWorkItem?.cancel()
-        footerHideWorkItem = nil
-        
-        guard shouldAutoHide else {
-            return
-        }
-        
-        let work = DispatchWorkItem { [weak footerView] in
-            footerView?.animate(isHidden: true)
-        }
-        
-        footerHideWorkItem = work
-        
-        DispatchQueue.main.asyncAfter(
-            deadline: .now() + Constants.footerAnimationDelay,
-            execute: work
-        )
-    }
-    
     @objc
     private func scrollViewBoundsDidChange(_ notification: Notification) {
         delegate?.didScroll(self)
@@ -331,7 +285,6 @@ public final class GalleryCollectionView: NSScrollView {
             updateTrackingAreas(view: $0.view)
         }
         updateScrollPocketVisibility()
-        updateFooterPin()
     }
     
     @objc
@@ -390,21 +343,7 @@ extension GalleryCollectionView: NSCollectionViewDelegate {
         guard numberOfItems > 0 else {
             return .zero
         }
-        return .init(width: 0, height: Constants.footerHeight)
-    }
-
-    public func collectionView(
-        _ collectionView: NSCollectionView,
-        willDisplaySupplementaryView view: NSView,
-        forElementKind elementKind: NSCollectionView.SupplementaryElementKind,
-        at indexPath: IndexPath
-    ) {
-        if elementKind == NSCollectionView.elementKindSectionFooter {
-            guard let footerView = view as? GalleryCollectionFooterItem else {
-                return
-            }
-            updateFooterPin(footerView: footerView)
-        }
+        return .zero
     }
 
     public func collectionView(_ collectionView: NSCollectionView, pasteboardWriterForItemAt indexPath: IndexPath) -> NSPasteboardWriting? {
@@ -452,7 +391,7 @@ extension GalleryCollectionView: GalleryInternalCollectionViewDelegate {
     }
 
     public func pinFooterOffset(_ collectionView: NSCollectionView) -> CGFloat {
-        return Constants.pinFooterOffset
+        return 0
     }
 }
 
@@ -472,7 +411,6 @@ extension GalleryCollectionView: NSCollectionViewDelegateFlowLayout {
 
 extension GalleryCollectionView: GalleryCollectionDataSourceDelegate {
     public func updateFooter() {
-        updateFooterPin()
     }
 }
 

@@ -336,8 +336,13 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
     
     func dataWasChanged() {
         contentView.isCreateButtonEnabled = canCreateWallpaper
+        updateGalleryInfo()
         delegate?.mainViewControllerUnsavedChangesDidChange(hasUnsavedChanges)
         scheduleSizePreview()
+    }
+
+    private func updateGalleryInfo() {
+        contentView.infoText = galleryController?.infoText ?? ""
     }
 
     private func scheduleSizePreview() {
@@ -359,12 +364,14 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
         }
         guard !attributes.isEmpty else {
             galleryController?.setOutputSizeText("0.00 KB")
+            updateGalleryInfo()
             return
         }
         contentView.isCreateButtonEnabled = canCreateWallpaper
         galleryController?.setOutputSizeText(
             Localization.Wallpaper.Main.sizeCalculating
         )
+        updateGalleryInfo()
         let operation = BlockOperation { [weak self] in
             guard let self = self else { return }
             Thread.sleep(forTimeInterval: 0.6)
@@ -394,6 +401,7 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
                     self.galleryController?.setOutputSizeText(
                         Self.formatOutputSize(bytes)
                     )
+                    self.updateGalleryInfo()
                 }
             } catch {
                 DispatchQueue.main.async {
@@ -401,6 +409,7 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
                         self.galleryController?.setOutputSizeText(
                             Localization.Wallpaper.Main.sizeUnavailable
                         )
+                        self.updateGalleryInfo()
                     }
                 }
             }

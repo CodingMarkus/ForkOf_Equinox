@@ -43,10 +43,6 @@ extension MainContentView {
             self.compressionScopeTitles = compressionScopeTitles
         }
     }
-
-    private enum Constants {
-        static let bottomBarHeight: CGFloat = 112
-    }
 }
 
 // MARK: - Class
@@ -83,18 +79,30 @@ public final class MainContentView: View {
         containerView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
+            bottomBarView.leadingAnchor.constraint(
+                equalTo: visualEffectView.contentView.leadingAnchor
+            ),
+            bottomBarView.trailingAnchor.constraint(
+                equalTo: visualEffectView.contentView.trailingAnchor
+            ),
+            bottomBarView.bottomAnchor.constraint(
+                equalTo: visualEffectView.contentView.bottomAnchor
+            ),
+            bottomBarView.heightAnchor.constraint(
+                equalToConstant: BottomBarView.preferredHeight
+            )
+        ])
+
+        NSLayoutConstraint.activate([
             visualEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
             visualEffectView.topAnchor.constraint(equalTo: topAnchor),
             visualEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
             visualEffectView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            bottomBarView.leadingAnchor.constraint(equalTo: visualEffectView.contentView.leadingAnchor),
-            bottomBarView.trailingAnchor.constraint(equalTo: visualEffectView.contentView.trailingAnchor),
-            bottomBarView.bottomAnchor.constraint(equalTo: visualEffectView.contentView.bottomAnchor),
-            bottomBarView.heightAnchor.constraint(equalToConstant: Constants.bottomBarHeight),
-
             containerView.topAnchor.constraint(equalTo: visualEffectView.contentView.topAnchor),
-            containerView.bottomAnchor.constraint(equalTo: bottomBarView.topAnchor),
+            containerView.bottomAnchor.constraint(
+                equalTo: visualEffectView.contentView.bottomAnchor
+            ),
             containerView.leadingAnchor.constraint(equalTo: visualEffectView.contentView.leadingAnchor),
             containerView.trailingAnchor.constraint(equalTo: visualEffectView.contentView.trailingAnchor)
         ])
@@ -105,6 +113,11 @@ public final class MainContentView: View {
     public var style: Style? {
         didSet {
             bottomBarView.style = style?.bottomBarStyle
+            if let style = style {
+                exportSettingsView.setCompressionScopeTitles(
+                    style.compressionScopeTitles
+                )
+            }
         }
     }
 
@@ -113,11 +126,6 @@ public final class MainContentView: View {
     public var active: Bool {
         get {
             return visualEffectView.active
-            if let style = style {
-                exportSettingsView.setCompressionScopeTitles(
-                    style.compressionScopeTitles
-                )
-            }
         }
         set {
             visualEffectView.active = newValue
@@ -148,6 +156,11 @@ public final class MainContentView: View {
         }
     }
 
+    public var infoText: String {
+        get { bottomBarView.infoText }
+        set { bottomBarView.infoText = newValue }
+    }
+
     public var compressionScopeIndex: Int {
         return exportSettingsView.compressionScopeIndex
     }
@@ -163,12 +176,19 @@ public final class MainContentView: View {
 }
 
 private final class ExportSettingsView: NSView {
+    private enum Constants {
+        static let rowSpacing: CGFloat = 16
+    }
+
     var settingsDidChange: (() -> Void)?
     private lazy var compressionScopeLabel = makeLabel(
         "Apply lossy compression to:"
     )
     private lazy var qualityLabel = makeLabel("Image quality:")
     private lazy var compressionScopePopUp = NSPopUpButton()
+    private var compressionScopeWidthConstraint: NSLayoutConstraint?
+    private var settingsWidthConstraint: NSLayoutConstraint?
+    private var settingsRows: NSStackView?
     private lazy var compressionHelpButton: NSButton = {
         let button = NSButton(
             image: NSImage(
@@ -244,17 +264,7 @@ private final class ExportSettingsView: NSView {
                 attributes: [.paragraphStyle: menuTitleStyle]
             )
         }
-        let optionFont = NSFont.systemFont(ofSize: 13)
-        let widestOption = compressionScopePopUp.itemArray.max {
-            titleWidth($0.title, font: optionFont) <
-                titleWidth($1.title, font: optionFont)
-        }
-        if let widestOption = widestOption {
-            compressionScopePopUp.select(widestOption)
-            compressionScopePopUp.sizeToFit()
-        }
         let compressionScopeWidth = compressionScopePopUp.frame.width
-        compressionScopePopUp.selectItem(at: 2)
         compressionHelpButton.widthAnchor.constraint(equalToConstant: 24)
             .isActive = true
         compressionHelpButton.heightAnchor.constraint(equalToConstant: 24)
@@ -272,39 +282,76 @@ private final class ExportSettingsView: NSView {
         compressionScopeControls.alignment = .centerY
         compressionScopeControls.spacing = 4
 
-        let row = NSStackView(views: [
+        let compressionRow = NSStackView(views: [
             compressionScopeLabel,
-            compressionScopeControls,
-            qualityLabel,
+            compressionScopeControls
+        ])
+        compressionRow.orientation = .horizontal
+        compressionRow.alignment = .centerY
+        compressionRow.spacing = 8
+
+        let qualityControls = NSStackView(views: [
+            qualitySlider,
             qualityValueButton
         ])
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 8
-        row.setCustomSpacing(20, after: compressionScopeControls)
-        row.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(row)
+        qualityControls.orientation = .horizontal
+        qualityControls.alignment = .centerY
+        qualityControls.spacing = 8
 
-        compressionScopePopUp.widthAnchor.constraint(
+        let qualityRow = NSStackView(views: [qualityLabel, qualityControls])
+        qualityRow.orientation = .horizontal
+        qualityRow.alignment = .centerY
+        qualityRow.spacing = 8
+
+        let rows = NSStackView(views: [compressionRow, qualityRow])
+        rows.orientation = .vertical
+        rows.alignment = .leading
+        rows.spacing = Constants.rowSpacing
+        rows.translatesAutoresizingMaskIntoConstraints = false
+        settingsRows = rows
+        addSubview(rows)
+
+        let widthConstraint = compressionScopePopUp.widthAnchor.constraint(
             equalToConstant: compressionScopeWidth
         )
-            .isActive = true
+        widthConstraint.isActive = true
+        compressionScopeWidthConstraint = widthConstraint
         qualityValueButton.widthAnchor.constraint(equalToConstant: 60)
             .isActive = true
-        widthAnchor.constraint(equalToConstant: row.fittingSize.width)
-            .isActive = true
+        let settingsWidth = widthAnchor.constraint(
+            equalToConstant: rows.fittingSize.width
+        )
+        settingsWidth.isActive = true
+        settingsWidthConstraint = settingsWidth
         NSLayoutConstraint.activate([
-            row.leadingAnchor.constraint(equalTo: leadingAnchor),
-            row.trailingAnchor.constraint(equalTo: trailingAnchor),
-            row.topAnchor.constraint(equalTo: topAnchor),
-            row.bottomAnchor.constraint(equalTo: bottomAnchor),
-            heightAnchor.constraint(equalToConstant: 28)
+            rows.leadingAnchor.constraint(equalTo: leadingAnchor),
+            rows.trailingAnchor.constraint(equalTo: trailingAnchor),
+            rows.topAnchor.constraint(equalTo: topAnchor),
+            rows.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
 
         compressionScopePopUp.setAccessibilityLabel(
             "Apply lossy compression to"
         )
         qualityValueButton.setAccessibilityLabel("Image quality")
+    }
+
+    func setCompressionScopeTitles(_ titles: [String]) {
+        guard titles.count == 4 else { return }
+        compressionScopeWidthConstraint?.isActive = false
+        compressionScopePopUp.removeAllItems()
+        compressionScopePopUp.addItems(withTitles: titles)
+        let optionFont = NSFont.systemFont(ofSize: 13)
+        let widestTitleWidth = titles.map {
+            titleWidth($0, font: optionFont)
+        }.max() ?? 0
+        compressionScopeWidthConstraint?.constant = widestTitleWidth + 48
+        compressionScopeWidthConstraint?.isActive = true
+        settingsRows?.layoutSubtreeIfNeeded()
+        compressionScopePopUp.selectItem(at: 2)
+        settingsRows?.layoutSubtreeIfNeeded()
+        settingsWidthConstraint?.constant =
+            settingsRows?.fittingSize.width ?? widestTitleWidth + 48
     }
 
     @objc
@@ -336,24 +383,6 @@ private final class ExportSettingsView: NSView {
         popoverQualityValueLabel.stringValue = value
         settingsDidChange?()
     }
-    func setCompressionScopeTitles(_ titles: [String]) {
-        guard titles.count == 4 else { return }
-        compressionScopeWidthConstraint?.isActive = false
-        compressionScopePopUp.removeAllItems()
-        compressionScopePopUp.addItems(withTitles: titles)
-        let optionFont = NSFont.systemFont(ofSize: 13)
-        let widestTitleWidth = titles.map {
-            titleWidth($0, font: optionFont)
-        }.max() ?? 0
-        compressionScopeWidthConstraint?.constant = widestTitleWidth + 48
-        compressionScopeWidthConstraint?.isActive = true
-        settingsRows?.layoutSubtreeIfNeeded()
-        compressionScopePopUp.selectItem(at: 2)
-        settingsRows?.layoutSubtreeIfNeeded()
-        settingsWidthConstraint?.constant =
-            settingsRows?.fittingSize.width ?? widestTitleWidth + 48
-    }
-
 
     @objc
     private func compressionScopeChanged(_ sender: NSPopUpButton) {
@@ -363,7 +392,7 @@ private final class ExportSettingsView: NSView {
     private func makeLabel(_ title: String) -> NSTextField {
         let label = NSTextField(labelWithString: title)
         label.font = .systemFont(ofSize: 13)
-        label.textColor = .secondaryLabelColor
+        label.textColor = .labelColor
         return label
     }
 

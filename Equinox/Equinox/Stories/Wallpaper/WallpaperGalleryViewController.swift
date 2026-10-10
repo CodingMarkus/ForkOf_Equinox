@@ -566,10 +566,12 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         completion: @escaping (NSImage?) -> Void
     ) {
         let resizeMode = ImageResizeMode.resized(size: Constants.thumbnailSize, respectAspect: true)
-        imageProvider.loadImage(url: model.url,
-                                sourceIndex: model.sourceIndex,
-                                resizeMode: resizeMode,
-                                completion: completion)
+        imageProvider.loadImage(
+            url: model.url,
+            sourceIndex: model.sourceIndex,
+            resizeMode: resizeMode,
+            completion: completion
+        )
     }
 
     func collectionMenuNeedsUpdate(_ menu: NSMenu) {

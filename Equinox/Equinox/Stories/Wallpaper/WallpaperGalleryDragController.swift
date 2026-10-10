@@ -141,10 +141,12 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
     }
 
     func registerDraggedTypes(for collectionView: NSCollectionView) {
-        collectionView.registerForDraggedTypes([
-            .fileURL,
-            Constants.collectionDragType
-        ])
+        let promiseTypes = NSFilePromiseReceiver.readableDraggedTypes.map {
+            NSPasteboard.PasteboardType($0)
+        }
+        collectionView.registerForDraggedTypes(
+            [.fileURL, Constants.collectionDragType] + promiseTypes
+        )
     }
 
     func pasteboardWriter(for collectionView: NSCollectionView, indexPath: IndexPath) -> NSPasteboardWriting? {
@@ -185,7 +187,13 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
     ) -> NSDragOperation {
         var dragOperation: NSDragOperation = []
 
-        guard delegate?.canValidateCollectionDrag() == true else {
+        let isInternalDrag =
+            (draggingInfo.draggingSource as? NSCollectionView) == collectionView
+
+        guard
+            isInternalDrag
+                || delegate?.canValidateCollectionDrag() == true
+        else {
             return dragOperation
         }
 
@@ -195,9 +203,12 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
             proposedDropOperation.pointee = .before
         }
 
-        if let draggingSource = draggingInfo.draggingSource as? NSCollectionView, draggingSource == collectionView {
+        if isInternalDrag {
             dragOperation = [.move]
-        } else if draggingInfo.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: Constants.pasteboardOptions) {
+        } else if draggingInfo.draggingPasteboard.canReadObject(
+            forClasses: [NSURL.self],
+            options: Constants.pasteboardOptions
+        ) {
             dragOperation = [.copy]
         }
 

@@ -54,6 +54,26 @@ public final class GalleryInternalCollectionView: NSCollectionView {
         internalDelegate?.didDraggingExited(sender)
     }
 
+    public override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        let indexPath = indexPathForItem(at: point)
+        let shouldDeselect = indexPath.map {
+            selectionIndexPaths.contains($0)
+                && event.modifierFlags.intersection([
+                    .command,
+                    .shift,
+                    .option,
+                    .control
+                ]).isEmpty
+        } ?? false
+
+        super.mouseDown(with: event)
+
+        if shouldDeselect, let indexPath = indexPath {
+            deselectItems(at: [indexPath])
+        }
+    }
+
     public override func draggingSession(
         _ session: NSDraggingSession,
         sourceOperationMaskFor context: NSDraggingContext

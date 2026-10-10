@@ -34,5 +34,21 @@
 			<string>Bilder löschen (%d bilder)</string>
 		</dict>
 	</dict>
+	<key>export</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@export@</string>
+		<key>export</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Bild exportieren…</string>
+			<key>other</key>
+			<string>Bilder exportieren… (%d Elemente)</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

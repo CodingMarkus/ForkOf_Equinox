@@ -243,24 +243,62 @@ final class WallpaperGalleryViewController: ViewController {
 
     @objc
     func collectionMenuExportImage(_ sender: Any) {
-        guard
-            contentView.selectedIndexPaths.count == 1,
-            let indexPath = contentView.selectedIndexPaths.first,
-            let (sourceURL, sourceIndex, filename) = filePromiseDetails(
-                at: indexPath
-            ),
-            let window = view.window
-        else {
+        let files = contentView.selectedIndexPaths
+            .sorted { $0.item < $1.item }
+            .compactMap { filePromiseDetails(at: $0) }
+        guard files.count == contentView.selectedIndexPaths.count,
+              !files.isEmpty,
+              let window = view.window else {
             return
         }
+
+        guard files.count > 1 else {
+            guard let file = files.first else { return }
+            exportImage(file, in: window)
+            return
+        }
+
+        let openPanel = NSOpenPanel()
+        openPanel.canChooseFiles = false
+        openPanel.canChooseDirectories = true
+        openPanel.allowsMultipleSelection = false
+        openPanel.directoryURL = FilePanelDirectories.save
+        openPanel.beginSheetModal(for: window) { [weak self] result in
+            guard result == .OK, let directoryURL = openPanel.url else {
+                return
+            }
+
+            do {
+                for file in files {
+                    let data = try self?.exportData(
+                        from: file.0,
+                        sourceIndex: file.1
+                    )
+                    guard let data = data else { return }
+                    let destinationURL = directoryURL.appendingPathComponent(
+                        file.2
+                    )
+                    try data.write(to: destinationURL, options: .atomic)
+                }
+                FilePanelDirectories.rememberSave(for: directoryURL)
+            } catch {
+                self?.delegate?.notify(error.localizedDescription)
+            }
+        }
+    }
+
+    private func exportImage(
+        _ file: (URL, Int?, String),
+        in window: NSWindow
+    ) {
 
         let savePanel = NSSavePanel()
         savePanel.directoryURL = FilePanelDirectories.save
         savePanel.canCreateDirectories = true
-        savePanel.nameFieldStringValue = filename
+        savePanel.nameFieldStringValue = file.2
         savePanel.canSelectHiddenExtension = true
         savePanel.isExtensionHidden = false
-        let fileExtension = URL(fileURLWithPath: filename).pathExtension
+        let fileExtension = URL(fileURLWithPath: file.2).pathExtension
         savePanel.allowedContentTypes = [
             UTType(filenameExtension: fileExtension) ?? .data
         ]
@@ -271,16 +309,11 @@ final class WallpaperGalleryViewController: ViewController {
             }
 
             do {
-                let sourceData = try Data(contentsOf: sourceURL)
-                let exportData: Data
-                if let sourceIndex = sourceIndex {
-                    exportData = try ImageCoreImpl().extractHEICFrame(
-                        from: sourceData,
-                        at: sourceIndex
-                    )
-                } else {
-                    exportData = sourceData
-                }
+                let exportData = try self?.exportData(
+                    from: file.0,
+                    sourceIndex: file.1
+                )
+                guard let exportData = exportData else { return }
                 try exportData.write(to: destinationURL, options: .atomic)
                 FilePanelDirectories.rememberSave(for: destinationURL)
             } catch {
@@ -288,12 +321,25 @@ final class WallpaperGalleryViewController: ViewController {
             }
         }
     }
+
+    private func exportData(from sourceURL: URL, sourceIndex: Int?) throws -> Data {
+        let sourceData = try Data(contentsOf: sourceURL)
+        guard let sourceIndex = sourceIndex else {
+            return sourceData
+        }
+        return try ImageCoreImpl().extractHEICFrame(
+            from: sourceData,
+            at: sourceIndex
+        )
+    }
 }
 
 // MARK: - Drag and Drop
 
 extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate {
-    func filePromiseDetails(at indexPath: IndexPath) -> (URL, Int?, String)? {
+    func filePromiseDetails(
+        at indexPath: IndexPath
+    ) -> (URL, Int?, String)? {
         guard dataController.data.items.indices.contains(indexPath.item) else {
             return nil
         }
@@ -508,11 +554,12 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         let count = contentView.selectedIndexPaths.count
         
         menu.removeAllItems()
-        if count == 1,
-           let indexPath = contentView.selectedIndexPaths.first,
-           filePromiseDetails(at: indexPath) != nil {
+        let exportableCount = contentView.selectedIndexPaths
+            .filter { filePromiseDetails(at: $0) != nil }
+            .count
+        if count > 0, exportableCount == count {
             let exportItem = NSMenuItem(
-                title: Localization.Wallpaper.Gallery.menuExport,
+                title: Localization.Wallpaper.Gallery.menuExport(param1: count),
                 action: #selector(collectionMenuExportImage(_:)),
                 keyEquivalent: String()
             )

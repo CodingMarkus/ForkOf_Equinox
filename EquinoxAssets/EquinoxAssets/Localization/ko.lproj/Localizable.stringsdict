@@ -35,5 +35,21 @@
             <string>이미지 %d개 삭제</string>
         </dict>
     </dict>
+    <key>export</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@export@</string>
+        <key>export</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>이미지 내보내기…</string>
+            <key>other</key>
+            <string>이미지 %d개 내보내기…</string>
+        </dict>
+    </dict>
 </dict>
 </plist>

@@ -282,6 +282,15 @@ public final class GalleryCollectionContentView: View {
         }
     }
 
+    public var isSelected: Bool {
+        get {
+            return imageView.isSelected
+        }
+        set {
+            imageView.isSelected = newValue
+        }
+    }
+
     public var isPrimary: Bool {
         get {
             return buttonsView.isPrimary

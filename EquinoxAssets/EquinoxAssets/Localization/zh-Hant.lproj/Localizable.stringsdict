@@ -34,5 +34,21 @@
 			<string>刪除圖片 (%d 個項目)</string>
 		</dict>
 	</dict>
+	<key>export</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@export@</string>
+		<key>export</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>匯出影像…</string>
+			<key>other</key>
+			<string>匯出影像…（%d 個項目）</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

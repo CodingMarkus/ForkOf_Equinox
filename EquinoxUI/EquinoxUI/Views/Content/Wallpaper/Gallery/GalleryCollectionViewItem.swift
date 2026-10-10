@@ -60,6 +60,8 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
 
     public override func loadView() {
         view = contentView
+        contentView.isSelected = isSelected
+        contentView.isHiglighted = shouldBeHighlighted()
     }
 
     public override func prepareForReuse() {
@@ -84,6 +86,7 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
     public override var isSelected: Bool {
         didSet {
             contentView.isHiglighted = shouldBeHighlighted()
+            contentView.isSelected = isSelected
         }
     }
 

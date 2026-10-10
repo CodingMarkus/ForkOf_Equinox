@@ -192,9 +192,12 @@ public enum Localization {
         }
         
         public enum Gallery {
-            public static let menuExport = Localization.localizedString(
-                key: "wallpaper.gallery.export"
-            )
+            public static func menuExport(param1: Int) -> String {
+                return String(
+                    format: Localization.localizedString(key: "export"),
+                    arguments: [param1]
+                )
+            }
 
             public static func menuDelete(param1: Int) -> String {
                 return String(format: Localization.localizedString(key: "delete"), arguments: [param1])

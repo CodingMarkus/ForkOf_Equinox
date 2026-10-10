@@ -34,5 +34,21 @@
 			<string>Fotoğrafı sil (%d öğe)</string>
 		</dict>
 	</dict>
+	<key>export</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@export@</string>
+		<key>export</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Görseli dışa aktar…</string>
+			<key>other</key>
+			<string>Görselleri dışa aktar… (%d öğe)</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

@@ -353,8 +353,20 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
     private func scheduleSizePreview() {
         let attributes = convertData() ?? []
         let settings = currentExportSettings
-        let imageKey = attributes.map {
-            "\($0.url.path):\($0.sourceIndex ?? -1)"
+        let imageKey = attributes.map { attribute in
+            let timingKey: String
+            switch attribute.imageType {
+            case .solar(let altitude, let azimuth):
+                timingKey = "solar:\(altitude):\(azimuth)"
+            case .time(let date):
+                timingKey = "time:\(date.timeIntervalSinceReferenceDate)"
+            case .appearance:
+                timingKey = "appearance"
+            }
+            let appearanceKey = String(describing: attribute.appearanceType)
+            return "\(attribute.url.path):\(attribute.sourceIndex ?? -1):"
+                + "\(attribute.primary):\(appearanceKey):"
+                + timingKey
         }.joined(separator: "|")
         let key = "\(imageKey)|\(settings.lossyCompressionScope)|" +
             "\(settings.imageQuality)"

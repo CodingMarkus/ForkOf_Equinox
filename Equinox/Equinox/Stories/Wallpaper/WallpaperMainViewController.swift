@@ -380,7 +380,7 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
             self.previewURL = nil
         }
         guard !attributes.isEmpty else {
-            galleryController?.setOutputSizeText("0.00 KB")
+            galleryController?.setOutputSizeText(Self.formatOutputSize(0))
             updateGalleryInfo()
             return
         }
@@ -449,11 +449,9 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
     }
 
     private static func formatOutputSize(_ bytes: Int) -> String {
-        let size = Double(bytes)
-        if size >= 1_048_576 {
-            return String(format: "%.2f MB", size / 1_048_576)
-        }
-        return String(format: "%.2f KB", size / 1_024)
+        return ByteCountFormatter.string(
+            fromByteCount: Int64(bytes), countStyle: .file
+        )
     }
     
     func notify(_ text: String) {

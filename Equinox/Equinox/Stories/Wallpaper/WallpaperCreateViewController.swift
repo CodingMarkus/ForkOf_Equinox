@@ -445,10 +445,22 @@ extension WallpaperCreateViewController: NSFilePromiseProviderDelegate {
         return operationQueue
     }
 
-    func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, writePromiseTo url: URL, completionHandler: @escaping (Error?) -> Void) {
+    func filePromiseProvider(
+        _ filePromiseProvider: NSFilePromiseProvider,
+        writePromiseTo url: URL,
+        completionHandler: @escaping (Error?) -> Void )
+    {
+        guard let createdImage = createdImage else {
+            completionHandler(CocoaError(.fileWriteUnknown))
+            return
+        }
+
         do {
-            try createdImage?.write(to: url)
-            completionHandler(nil)
+            try createdImage.write(to: url, options: .atomic)
+            DispatchQueue.main.async {
+                self.delegate?.createViewControllerDidSave()
+                completionHandler(nil)
+            }
         } catch let error {
             completionHandler(error)
         }

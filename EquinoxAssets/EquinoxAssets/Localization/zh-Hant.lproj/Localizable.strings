@@ -1,3 +1,8 @@
+"unsaved.changes.title" = "要捨棄未儲存的更改嗎？";
+"unsaved.changes.close.description" = "如果關閉此視窗，您的更改將會遺失。";
+"unsaved.changes.quit.description" = "如果結束應用程式，您的更改將會遺失。";
+"unsaved.changes.discard" = "捨棄更改";
+
 "menu.main.about" = "關於 %@";
 "menu.main.preferences" = "偏好設定⋯";
 "menu.main.hide" = "隱藏 %@";

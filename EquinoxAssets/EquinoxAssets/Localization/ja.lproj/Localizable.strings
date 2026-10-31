@@ -1,3 +1,8 @@
+"unsaved.changes.title" = "保存されていない変更を破棄しますか？";
+"unsaved.changes.close.description" = "このウインドウを閉じると、変更内容は失われます。";
+"unsaved.changes.quit.description" = "アプリを終了すると、変更内容は失われます。";
+"unsaved.changes.discard" = "変更を破棄";
+
 "menu.main.about" = "%@について";
 "menu.main.preferences" = "環境設定...";
 "menu.main.hide" = "%@を隠す";

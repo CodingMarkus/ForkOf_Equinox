@@ -1,3 +1,8 @@
+"unsaved.changes.title" = "Discard unsaved changes?";
+"unsaved.changes.close.description" = "Your changes will be lost if you close this window.";
+"unsaved.changes.quit.description" = "Your changes will be lost if you quit the app.";
+"unsaved.changes.discard" = "Discard Changes";
+
 "menu.main.about" = "About %@";
 "menu.main.preferences" = "Preferences...";
 "menu.main.hide" = "Hide %@";

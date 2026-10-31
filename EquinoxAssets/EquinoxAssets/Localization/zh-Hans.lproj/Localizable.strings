@@ -1,3 +1,8 @@
+"unsaved.changes.title" = "放弃未保存的更改？";
+"unsaved.changes.close.description" = "如果关闭此窗口，您的更改将会丢失。";
+"unsaved.changes.quit.description" = "如果退出应用，您的更改将会丢失。";
+"unsaved.changes.discard" = "放弃更改";
+
 "menu.main.about" = "关于 %@";
 "menu.main.preferences" = "偏好设置...";
 "menu.main.hide" = "隐藏 %@";

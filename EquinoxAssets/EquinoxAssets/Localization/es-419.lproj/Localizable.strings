@@ -1,3 +1,8 @@
+"unsaved.changes.title" = "¿Descartar los cambios sin guardar?";
+"unsaved.changes.close.description" = "Los cambios se perderán si cierras esta ventana.";
+"unsaved.changes.quit.description" = "Los cambios se perderán si sales de la aplicación.";
+"unsaved.changes.discard" = "Descartar cambios";
+
 "menu.main.about" = "Acerca de %@";
 "menu.main.preferences" = "Configuración...";
 "menu.main.hide" = "Ocultar %@";

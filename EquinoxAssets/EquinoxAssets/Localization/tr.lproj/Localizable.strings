@@ -1,3 +1,8 @@
+"unsaved.changes.title" = "Kaydedilmemiş değişiklikler silinsin mi?";
+"unsaved.changes.close.description" = "Bu pencereyi kapatırsanız değişiklikleriniz kaybolur.";
+"unsaved.changes.quit.description" = "Uygulamadan çıkarsanız değişiklikleriniz kaybolur.";
+"unsaved.changes.discard" = "Değişiklikleri Sil";
+
 "menu.main.about" = "%@ Hakkında";
 "menu.main.preferences" = "Tercihler...";
 "menu.main.hide" = "%@ Gizle";

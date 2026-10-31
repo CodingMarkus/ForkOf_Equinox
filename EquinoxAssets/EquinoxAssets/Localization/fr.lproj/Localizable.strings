@@ -1,3 +1,8 @@
+"unsaved.changes.title" = "Ignorer les modifications non enregistrées ?";
+"unsaved.changes.close.description" = "Vos modifications seront perdues si vous fermez cette fenêtre.";
+"unsaved.changes.quit.description" = "Vos modifications seront perdues si vous quittez l'application.";
+"unsaved.changes.discard" = "Ignorer les modifications";
+
 "menu.main.about" = "À propos %@";
 "menu.main.preferences" = "Préférences...";
 "menu.main.hide" = "Masquer %@";

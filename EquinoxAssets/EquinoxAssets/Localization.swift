@@ -29,6 +29,21 @@
 import Foundation
 
 public enum Localization {
+    public enum UnsavedChanges {
+        public static let title = Localization.localizedString(
+            key: "unsaved.changes.title"
+        )
+        public static let closeDescription = Localization.localizedString(
+            key: "unsaved.changes.close.description"
+        )
+        public static let quitDescription = Localization.localizedString(
+            key: "unsaved.changes.quit.description"
+        )
+        public static let discard = Localization.localizedString(
+            key: "unsaved.changes.discard"
+        )
+    }
+
     public enum Shared {
         public static func images(param1: Int) -> String {
             return String(format: Localization.localizedString(key: "images"), arguments: [param1])

@@ -27,6 +27,7 @@
 // THE SOFTWARE.
 
 import AppKit
+import EquinoxAssets
 import EquinoxCore
 import EquinoxUI
 
@@ -70,7 +71,7 @@ extension StoriesControllerImpl: StoriesController {
             return true
         }
         return confirmDiscardingChanges(
-            description: "Your changes will be lost if you quit the app."
+            description: Localization.UnsavedChanges.quitDescription
         )
     }
 
@@ -179,8 +180,7 @@ extension StoriesControllerImpl: NSWindowDelegate {
         if let index = wallpaperWindowControllers.firstIndex(where: { $0.window === closeWindow }) {
             guard !wallpaperWindowControllers[index].hasUnsavedChanges
                 || confirmDiscardingChanges(
-                    description: "Your changes will be lost if you close "
-                        + "this window."
+                    description: Localization.UnsavedChanges.closeDescription
                 ) else {
                 return false
             }
@@ -203,11 +203,11 @@ extension StoriesControllerImpl: NSWindowDelegate {
 
     private func confirmDiscardingChanges(description: String) -> Bool {
         let alert = NSAlert()
-        alert.messageText = "Discard unsaved changes?"
+        alert.messageText = Localization.UnsavedChanges.title
         alert.informativeText = description
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Discard Changes")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: Localization.UnsavedChanges.discard)
+        alert.addButton(withTitle: Localization.Wallpaper.Create.cancel)
         return alert.runModal() == .alertFirstButtonReturn
     }
 }

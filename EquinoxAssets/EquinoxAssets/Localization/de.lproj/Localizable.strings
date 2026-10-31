@@ -1,3 +1,8 @@
+"unsaved.changes.title" = "Ungesicherte Änderungen verwerfen?";
+"unsaved.changes.close.description" = "Deine Änderungen gehen verloren, wenn du dieses Fenster schließt.";
+"unsaved.changes.quit.description" = "Deine Änderungen gehen verloren, wenn du die App beendest.";
+"unsaved.changes.discard" = "Änderungen verwerfen";
+
 "menu.main.about" = "Über %@";
 "menu.main.preferences" = "Einstellungen...";
 "menu.main.hide" = "%@ ausblenden";

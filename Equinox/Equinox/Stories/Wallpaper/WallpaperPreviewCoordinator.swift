@@ -18,7 +18,12 @@ final class WallpaperPreviewCoordinator {
 	private let cancelPending: () -> Void
 	private var revision = 0
 	private var lastKey: String?
-	private(set) var previewURL: URL?
+	private var currentContentKey: String?
+	private var previewContentKey: String?
+	private var storedPreviewURL: URL?
+	var previewURL: URL? {
+		return currentContentKey == previewContentKey ? storedPreviewURL : nil
+	}
 	var stateDidChange: ((State) -> Void)?
 
 	init(
@@ -44,18 +49,25 @@ final class WallpaperPreviewCoordinator {
 
 	deinit {
 		cancelPending()
-		if let url = previewURL { try? FileManager.default.removeItem(at: url) }
+		if let url = storedPreviewURL {
+			try? FileManager.default.removeItem(at: url)
+		}
 	}
 
 	func update(_ attributes: [ImageAttributes], settings: ImageExportSettings) {
-		let key = Self.key(attributes, settings: settings)
+		let contentKey = Self.key(attributes, settings: settings)
+		currentContentKey = contentKey
+		let key = Self.sizeKey(attributes, settings: settings)
 		guard key != lastKey else { return }
 		lastKey = key
 		revision += 1
 		cancelPending()
 		let currentRevision = revision
-		if let url = previewURL { try? FileManager.default.removeItem(at: url) }
-		previewURL = nil
+		if let url = storedPreviewURL {
+			try? FileManager.default.removeItem(at: url)
+		}
+		storedPreviewURL = nil
+		previewContentKey = nil
 		guard !attributes.isEmpty else {
 			stateDidChange?(.empty)
 			return
@@ -79,7 +91,8 @@ final class WallpaperPreviewCoordinator {
 							try? FileManager.default.removeItem(at: url)
 							return
 						}
-						self.previewURL = url
+						self.storedPreviewURL = url
+						self.previewContentKey = contentKey
 						self.stateDidChange?(.ready(url, data.count))
 					}
 				} catch {
@@ -91,6 +104,16 @@ final class WallpaperPreviewCoordinator {
 				}
 			}
 		}
+	}
+
+	private static func sizeKey(
+		_ attributes: [ImageAttributes], settings: ImageExportSettings
+	) -> String {
+		let images = attributes.map { attribute in
+			return "\(attribute.url.absoluteString):\(attribute.sourceIndex ?? -1)"
+		}.sorted().joined(separator: "|")
+		return "\(images)|\(settings.lossyCompressionScope)|"
+			+ "\(settings.imageQuality)"
 	}
 
 	private static func key(
@@ -107,7 +130,8 @@ final class WallpaperPreviewCoordinator {
 				timing = "appearance"
 			}
 			let appearance = String(describing: attribute.appearanceType)
-			return "\(attribute.url.path):\(attribute.sourceIndex ?? -1):"
+			return "\(attribute.url.absoluteString):\(attribute.sourceIndex ?? -1):"
+				+ "\(attribute.index):"
 				+ "\(attribute.primary):\(appearance):" + timing
 		}.joined(separator: "|")
 		return "\(images)|\(settings.lossyCompressionScope)|"

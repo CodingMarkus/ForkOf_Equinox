@@ -41,17 +41,13 @@ class WallpaperPreviewCoordinatorTests: XCTestCase {
 
 	func testOnlyLatestScheduledRequestIsExecuted() {
 		coordinator.update([attribute(altitude: 1)], settings: .default)
-		coordinator.update([attribute(altitude: 2)], settings: .default)
+		coordinator.update([attribute(sourceIndex: 1)], settings: .default)
 		scheduled.forEach { $0() }
 
 		XCTAssertEqual(work.count, 1)
 		work[0]()
 		XCTAssertEqual(service.requests.count, 1)
-		if case let .solar(altitude, _) = service.requests[0][0].imageType {
-			XCTAssertEqual(altitude, 2)
-		} else {
-			XCTFail("Expected solar settings")
-		}
+		XCTAssertEqual(service.requests[0][0].sourceIndex, 1)
 	}
 
 	func testOutdatedResultCannotReplaceNewerPreview() throws {
@@ -66,7 +62,7 @@ class WallpaperPreviewCoordinatorTests: XCTestCase {
 		}
 		coordinator.update([attribute(altitude: 1)], settings: .default)
 		scheduled.removeFirst()()
-		coordinator.update([attribute(altitude: 2)], settings: .default)
+		coordinator.update([attribute(sourceIndex: 1)], settings: .default)
 		scheduled.removeFirst()()
 
 		work[1]()
@@ -115,10 +111,10 @@ class WallpaperPreviewCoordinatorTests: XCTestCase {
 		coordinator.update([first], settings: ImageExportSettings(
 			lossyCompressionScope: .allImages, imageQuality: 60
 		))
-		XCTAssertEqual(scheduled.count, 5)
+		XCTAssertEqual(scheduled.count, 3)
 	}
 
-	func testChangingTimeAndOrderInvalidatesPreview() {
+	func testChangingTimeAndOrderInvalidatesPreview() throws {
 		let date = Date(timeIntervalSince1970: 1000)
 		func timed(_ offset: TimeInterval, index: Int) -> ImageAttributes {
 			return ImageAttributes(
@@ -129,11 +125,21 @@ class WallpaperPreviewCoordinatorTests: XCTestCase {
 		}
 		let first = timed(0, index: 0)
 		let second = timed(60, index: 1)
+		let ready = expectation(description: "Size is ready")
+		coordinator.stateDidChange = { state in
+			if case .ready = state { ready.fulfill() }
+		}
 		coordinator.update([first, second], settings: .default)
 		coordinator.update([second, first], settings: .default)
 		coordinator.update([first, timed(120, index: 1)], settings: .default)
 
-		XCTAssertEqual(scheduled.count, 3)
+		XCTAssertEqual(scheduled.count, 1)
+		scheduled.removeFirst()()
+		work.removeFirst()()
+		wait(for: [ready], timeout: 2)
+		XCTAssertNil(coordinator.previewURL)
+		coordinator.update([first, second], settings: .default)
+		XCTAssertNotNil(coordinator.previewURL)
 	}
 
 	func testDeinitRemovesPreviewFile() throws {
@@ -153,12 +159,12 @@ class WallpaperPreviewCoordinatorTests: XCTestCase {
 	}
 
 	private func attribute(
-		altitude: Double = 0, azimuth: Double = 0
+		altitude: Double = 0, azimuth: Double = 0, sourceIndex: Int? = nil
 	) -> ImageAttributes {
 		return ImageAttributes(
 			url: url, index: 0, primary: true,
 			imageType: .solar(altitude: altitude, azimuth: azimuth),
-			appearanceType: .light
+			appearanceType: .light, sourceIndex: sourceIndex
 		)
 	}
 }

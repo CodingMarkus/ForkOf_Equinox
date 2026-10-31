@@ -66,6 +66,7 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
 
     public override func prepareForReuse() {
         super.prepareForReuse()
+        model = nil
         contentView.image = nil
     }
 
@@ -116,8 +117,9 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
     }
 
     public func setModel(_ model: GalleryModel, animated: Bool) {
+        let needsImage = self.model !== model
         self.model = model
-        configure(model, animated: animated)
+        configure(model, animated: animated, loadImage: needsImage)
     }
 
     public var draggingImage: NSImage? {
@@ -138,7 +140,9 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
         return isForSelection || isAsDropTarget || isNotForDeselection
     }
     
-    private func configure(_ model: GalleryModel, animated: Bool) {
+    private func configure(
+        _ model: GalleryModel, animated: Bool, loadImage: Bool
+    ) {
         configureActions(for: model)
 
         contentView.delegate = delegate
@@ -177,8 +181,9 @@ public final class GalleryCollectionViewItem: NSCollectionViewItem {
             contentView.time = Date()
         }
 
+        guard loadImage else { return }
         delegate?.loadImage(model: model) { [weak self] image in
-            guard self?.model == model else {
+            guard self?.model === model else {
                 return
             }
             self?.contentView.image = image

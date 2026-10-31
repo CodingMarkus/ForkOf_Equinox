@@ -191,7 +191,7 @@ final class WallpaperGalleryViewController: ViewController {
 
     func setOutputSizeText(_ text: String) {
         dataController.setOutputSizeText(text)
-        contentView.reloadCollection(dataController.data, type: .hard)
+        contentView.reloadCollection(dataController.data, type: .soft)
     }
 
     func replace(with attributes: [ImageAttributes]) {

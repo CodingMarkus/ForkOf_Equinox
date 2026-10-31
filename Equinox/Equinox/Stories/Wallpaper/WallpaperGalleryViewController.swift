@@ -384,38 +384,35 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         return (model.url, sourceIndex, filename)
     }
 
-    func processInternalCollectionItems(_ indexPaths: [IndexPath], insertIndexPath: IndexPath) {
-        var moveIndexPaths: [IndexPath] = []
-        var shift = 0
-        var values: [GalleryModel] = []
-
-        for (index, indexPath) in indexPaths.enumerated() {
-            if indexPath.item < insertIndexPath.item {
-                shift += 1
-            }
-            let shiftedIndex = indexPath.item - index
-            let model = dataController.data.items[shiftedIndex]
-            values.append(model)
-            dataController.remove(at: shiftedIndex)
-            moveIndexPaths.append(indexPath)
-        }
-
-        let insertIndex = insertIndexPath.item - shift
-        dataController.insert(values, at: insertIndex)
+    func processInternalCollectionItems(
+        _ indexPaths: [IndexPath], insertIndexPath: IndexPath
+    ) {
+        guard let items = GalleryDragOperations.moved(
+            dataController.data.items,
+            indices: indexPaths.map { $0.item },
+            destination: insertIndexPath.item
+        ) else { return }
+        contentView.deselectCollectionItems(at: Set(indexPaths))
+        dataController.replace(with: items)
         refreshData()
+        contentView.reloadCollection(dataController.data, type: .hard)
+    }
 
-        contentView.performCollectionUpdates({ [weak self] in
-            for (index, indexPath) in moveIndexPaths.enumerated() {
-                let destinationIndexPath = IndexPath(item: insertIndex + index, section: indexPath.section)
-                self?.contentView.moveCollectionItem(at: indexPath, to: destinationIndexPath)
-            }
-            self?.contentView.deselectCollectionItems(at: Set(moveIndexPaths))
-        }, completion: { [weak self] _ in
-            guard let self = self else {
-                return
-            }
-            self.contentView.reloadCollection(self.dataController.data, type: .hard)
-        })
+    func copyInternalCollectionItems(
+        _ indexPaths: [IndexPath], insertIndexPath: IndexPath
+    ) {
+        let items = dataController.data.items
+        let limit = type == .appearance
+            ? max(0, Constants.maxAppearanceItemsCount - items.count)
+            : nil
+        let models = GalleryDragOperations.copies(
+            items, indices: indexPaths.map { $0.item }, limit: limit
+        )
+        guard !models.isEmpty else { return }
+        contentView.deselectCollectionItems(at: Set(indexPaths))
+        dataController.insert(models, at: insertIndexPath.item)
+        refreshData()
+        contentView.reloadCollection(dataController.data, type: .hard)
     }
 
     func processExternalCollectionItems(_ urls: [URL], insertIndexPath: IndexPath) {
@@ -452,24 +449,15 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
             .selectedIndexPaths
             .sorted(by: >)
         
+        guard !indexPaths.isEmpty else { return }
+        contentView.deselectCollectionItems(at: Set(indexPaths))
         for indexPath in indexPaths {
             dataController.remove(at: indexPath.item)
         }
-        
         refreshData()
-        
-        contentView.performCollectionUpdates({ [weak self] in
-            let indexPathsSet = Set(indexPaths)
-            self?.contentView.deleteCollectionItems(at: indexPathsSet)
-            self?.contentView.deselectCollectionItems(at: indexPathsSet)
-        }, completion: { [weak self] _ in
-            guard let self = self else {
-                return
-            }
-            self.contentView.reloadCollection(self.dataController.data, type: .hard)
-        })
+        contentView.reloadCollection(dataController.data, type: .hard)
     }
-    
+
     func canValidateCollectionDrag() -> Bool {
         switch type {
         case .solar, .time:

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AABB00030000000000000004 /* AppearanceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00020000000000000004 /* AppearanceType.swift */; };
+		AABB00030000000000000003 /* GalleryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00020000000000000003 /* GalleryModel.swift */; };
+		AABB00030000000000000002 /* GalleryDragOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00020000000000000002 /* GalleryDragOperations.swift */; };
+		AABB00030000000000000001 /* GalleryDragOperationsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00020000000000000001 /* GalleryDragOperationsTests.swift */; };
 		F32C64AB27028479002F5817 /* EquinoxCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F3B334CD267DC5B90025AB04 /* EquinoxCore.framework */; };
 		F32C64B427028505002F5817 /* ImageCacheCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F32C64B327028505002F5817 /* ImageCacheCoreTests.swift */; };
 		F3348F54270296AF00695C8A /* SolarCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3348F53270296AF00695C8A /* SolarCoreTests.swift */; };
@@ -63,6 +67,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		AABB00020000000000000004 /* AppearanceType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "../EquinoxUI/EquinoxUI/Presentation Models/AppearanceType.swift"; sourceTree = "SOURCE_ROOT"; };
+		AABB00020000000000000003 /* GalleryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "../EquinoxUI/EquinoxUI/Presentation Models/GalleryModel.swift"; sourceTree = "SOURCE_ROOT"; };
+		AABB00020000000000000002 /* GalleryDragOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "../EquinoxUI/EquinoxUI/Views/Content/Wallpaper/Gallery/GalleryDragOperations.swift"; sourceTree = "SOURCE_ROOT"; };
+		AABB00020000000000000001 /* GalleryDragOperationsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GalleryDragOperationsTests.swift"; sourceTree = "<group>"; };
 		F32C64A727028479002F5817 /* EquinoxCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EquinoxCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F32C64B327028505002F5817 /* ImageCacheCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCacheCoreTests.swift; sourceTree = "<group>"; };
 		F3348F53270296AF00695C8A /* SolarCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolarCoreTests.swift; sourceTree = "<group>"; };
@@ -132,6 +140,10 @@
 		F32C64A827028479002F5817 /* EquinoxCoreTests */ = {
 			isa = PBXGroup;
 			children = (
+				AABB00020000000000000004 /* AppearanceType.swift */,
+				AABB00020000000000000003 /* GalleryModel.swift */,
+				AABB00020000000000000002 /* GalleryDragOperations.swift */,
+				AABB00020000000000000001 /* GalleryDragOperationsTests.swift */,
 				F374BA4F292E7D2300CE69FF /* Mocks */,
 				F3348F5F2702B09600695C8A /* Resources */,
 				F32C64B327028505002F5817 /* ImageCacheCoreTests.swift */,
@@ -384,6 +396,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AABB00030000000000000004 /* AppearanceType.swift in Sources */,
+				AABB00030000000000000003 /* GalleryModel.swift in Sources */,
+				AABB00030000000000000002 /* GalleryDragOperations.swift in Sources */,
+				AABB00030000000000000001 /* GalleryDragOperationsTests.swift in Sources */,
 				F38D5B142741B0950065E13D /* StorageCoreTests.swift in Sources */,
 				F32C64B427028505002F5817 /* ImageCacheCoreTests.swift in Sources */,
 				F3348F652702B5A000695C8A /* ImageCoreTests.swift in Sources */,

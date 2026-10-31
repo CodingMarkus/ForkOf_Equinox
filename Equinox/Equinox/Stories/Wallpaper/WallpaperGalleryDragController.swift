@@ -38,6 +38,9 @@ protocol WallpaperGalleryDragControllerDelegate: AnyObject {
 
     func refreshCollectionData(_ index: Int, field: GalleryModel.MutateField, sender: Any?)
     func processInternalCollectionItems(_ indexPaths: [IndexPath], insertIndexPath: IndexPath)
+    func copyInternalCollectionItems(
+        _ indexPaths: [IndexPath], insertIndexPath: IndexPath
+    )
     func processExternalCollectionItems(_ urls: [URL], insertIndexPath: IndexPath)
     func deleteCollectionItems()
     func canValidateCollectionDrag() -> Bool
@@ -77,7 +80,7 @@ extension WallpaperGalleryDragController {
 
 final class WallpaperGalleryDragController: NSObject {
     private let type: WallpaperType
-    private var filePromiseIndexPaths: [IndexPath] = []
+    private var dragSession = GalleryDragSession()
     private let filePromiseQueue = OperationQueue()
     
     // MARK: - Initializer
@@ -94,28 +97,17 @@ final class WallpaperGalleryDragController: NSObject {
     // MARK: - Private
     
     private func dropInternalItems(collectionView: NSCollectionView, draggingInfo: NSDraggingInfo, insertIndexPath: IndexPath) -> Bool {
-        guard let pasteboardItems = draggingInfo.draggingPasteboard.pasteboardItems else {
-            return false
+        let resolvedIndexPaths = dragSession.indexPaths
+        guard !resolvedIndexPaths.isEmpty else { return false }
+        if NSEvent.modifierFlags.contains(.option) {
+            delegate?.copyInternalCollectionItems(
+                resolvedIndexPaths, insertIndexPath: insertIndexPath
+            )
+        } else {
+            delegate?.processInternalCollectionItems(
+                resolvedIndexPaths, insertIndexPath: insertIndexPath
+            )
         }
-
-        let indexPaths: [IndexPath] = pasteboardItems.compactMap { item in
-            guard
-                let pasteboardData = item.data(forType: Constants.collectionDragType),
-                let indexPath = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSIndexPath.self, from: pasteboardData) as? IndexPath
-            else {
-                return nil
-            }
-            return indexPath
-        }
-
-        let resolvedIndexPaths = indexPaths.isEmpty
-            ? filePromiseIndexPaths
-            : indexPaths
-        filePromiseIndexPaths = []
-        delegate?.processInternalCollectionItems(
-            resolvedIndexPaths,
-            insertIndexPath: insertIndexPath
-        )
 
         return true
     }
@@ -153,9 +145,6 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
         if let (url, sourceIndex, filename) = delegate?.filePromiseDetails(
             at: indexPath
         ) {
-            if !filePromiseIndexPaths.contains(indexPath) {
-                filePromiseIndexPaths.append(indexPath)
-            }
             let details = WallpaperFramePromiseDetails(
                 sourceURL: url,
                 sourceIndex: sourceIndex,
@@ -200,11 +189,28 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
         delegate?.isDragHighlighted = true
 
         if proposedDropOperation.pointee == .on {
+            let indexPath = proposedDropIndexPath.pointee as IndexPath
+            let point = collectionView.convert(
+                draggingInfo.draggingLocation, from: nil
+            )
+            if let attributes = collectionView.layoutAttributesForItem(
+                at: indexPath
+            ), point.x >= attributes.frame.midX {
+                proposedDropIndexPath.pointee = IndexPath(
+                    item: indexPath.item + 1, section: indexPath.section
+                ) as NSIndexPath
+            }
             proposedDropOperation.pointee = .before
         }
 
         if isInternalDrag {
-            dragOperation = [.move]
+            if NSEvent.modifierFlags.contains(.option) {
+                if delegate?.canValidateCollectionDrag() == true {
+                    dragOperation = .copy
+                }
+            } else {
+                dragOperation = .move
+            }
         } else if draggingInfo.draggingPasteboard.canReadObject(
             forClasses: [NSURL.self],
             options: Constants.pasteboardOptions
@@ -232,6 +238,14 @@ extension WallpaperGalleryDragController: GalleryCollectionViewDelegate {
         }
 
         return result
+    }
+
+    func draggingSessionBegan(at indexPaths: Set<IndexPath>) {
+        dragSession.begin(at: indexPaths)
+    }
+
+    func draggingSessionEnded() {
+        dragSession.end()
     }
 
     func draggingExited(_ sender: NSDraggingInfo?) {

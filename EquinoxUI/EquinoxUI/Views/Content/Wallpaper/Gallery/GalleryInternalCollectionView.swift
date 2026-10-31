@@ -38,6 +38,8 @@ public protocol GalleryInternalCollectionViewDelegate: AnyObject {
 // MARK: - Class
 
 public final class GalleryInternalCollectionView: NSCollectionView {
+    private var dragStarted = false
+
     init() {
         super.init(frame: .zero)
         setup()
@@ -67,9 +69,10 @@ public final class GalleryInternalCollectionView: NSCollectionView {
                 ]).isEmpty
         } ?? false
 
+        dragStarted = false
         super.mouseDown(with: event)
 
-        if shouldDeselect, let indexPath = indexPath {
+        if shouldDeselect, !dragStarted, let indexPath = indexPath {
             deselectItems(at: [indexPath])
         }
     }
@@ -82,7 +85,7 @@ public final class GalleryInternalCollectionView: NSCollectionView {
         case .outsideApplication:
             return .copy
         case .withinApplication:
-            return .move
+            return [.move, .copy]
         @unknown default:
             return []
         }
@@ -108,6 +111,10 @@ public final class GalleryInternalCollectionView: NSCollectionView {
     }
 
     // MARK: Public
+
+    func noteDragStarted() {
+        dragStarted = true
+    }
 
     public weak var internalDelegate: GalleryInternalCollectionViewDelegate?
     

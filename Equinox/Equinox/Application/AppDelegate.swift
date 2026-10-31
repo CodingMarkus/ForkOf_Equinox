@@ -73,6 +73,14 @@ final class AppDelegate: NSObject {
 // MARK: - NSApplicationDelegate
 
 extension AppDelegate: NSApplicationDelegate {
+    func applicationShouldTerminate(
+        _ sender: NSApplication
+    ) -> NSApplication.TerminateReply {
+        return storiesController.shouldTerminate()
+            ? .terminateNow
+            : .terminateCancel
+    }
+
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         setupMenu()
         storiesController.start()

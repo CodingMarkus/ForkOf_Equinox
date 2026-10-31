@@ -37,6 +37,7 @@ protocol StoriesController {
     func start()
     func new()
     func open(_ url: URL) throws
+    func shouldTerminate() -> Bool
 }
 
 // MARK: - Enums, Structs
@@ -62,6 +63,17 @@ final class StoriesControllerImpl: NSObject {
 // MARK: - StoriesController
 
 extension StoriesControllerImpl: StoriesController {
+    func shouldTerminate() -> Bool {
+        guard wallpaperWindowControllers.contains(where: {
+            $0.hasUnsavedChanges
+        }) else {
+            return true
+        }
+        return confirmDiscardingChanges(
+            description: "Your changes will be lost if you quit the app."
+        )
+    }
+
     func start() {
         presentWelcome()
     }
@@ -166,7 +178,10 @@ extension StoriesControllerImpl: NSWindowDelegate {
         let closeWindow = sender
         if let index = wallpaperWindowControllers.firstIndex(where: { $0.window === closeWindow }) {
             guard !wallpaperWindowControllers[index].hasUnsavedChanges
-                || confirmDiscardingChanges() else {
+                || confirmDiscardingChanges(
+                    description: "Your changes will be lost if you close "
+                        + "this window."
+                ) else {
                 return false
             }
             wallpaperWindowControllers.remove(at: index)
@@ -186,10 +201,10 @@ extension StoriesControllerImpl: NSWindowDelegate {
         return true
     }
 
-    private func confirmDiscardingChanges() -> Bool {
+    private func confirmDiscardingChanges(description: String) -> Bool {
         let alert = NSAlert()
         alert.messageText = "Discard unsaved changes?"
-        alert.informativeText = "Your changes will be lost if you close this window."
+        alert.informativeText = description
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Discard Changes")
         alert.addButton(withTitle: "Cancel")

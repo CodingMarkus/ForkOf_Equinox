@@ -118,4 +118,52 @@ class GalleryDragOperationsTests: XCTestCase {
 		XCTAssertEqual(result.marker.midX, -10)
 		XCTAssertNil(GalleryDragOperations.insertion(at: .zero, frames: []))
 	}
+
+	func testAssigningLightPreservesOtherImagesDarkAppearance() {
+		let first = model(1, appearance: .both, primary: true)
+		let second = model(2, appearance: .all, primary: false)
+		let changed = GallerySelectionRules.setAppearance(
+			.light, for: second, in: [first, second]
+		)
+
+		XCTAssertEqual(first.appearance, .dark)
+		XCTAssertEqual(second.appearance, .light)
+		XCTAssertEqual(changed.count, 2)
+	}
+
+	func testAssigningBothClearsOtherAppearances() {
+		let first = model(1, appearance: .light, primary: true)
+		let second = model(2, appearance: .dark, primary: false)
+		let third = model(3, appearance: .all, primary: false)
+		_ = GallerySelectionRules.setAppearance(
+			.both, for: third, in: [first, second, third]
+		)
+
+		XCTAssertEqual(first.appearance, .all)
+		XCTAssertEqual(second.appearance, .all)
+		XCTAssertEqual(third.appearance, .both)
+	}
+
+	func testAssigningPrimaryClearsPreviousPrimary() {
+		let first = model(1, appearance: .light, primary: true)
+		let second = model(2, appearance: .dark, primary: false)
+		let changed = GallerySelectionRules.setPrimary(
+			second, in: [first, second]
+		)
+
+		XCTAssertFalse(first.primary)
+		XCTAssertTrue(second.primary)
+		XCTAssertEqual(changed.count, 2)
+	}
+
+	private func model(
+		_ number: Int, appearance: AppearanceType, primary: Bool
+	) -> GalleryModel {
+		return GalleryModel(
+			number: number, url: URL(fileURLWithPath: "/image"),
+			appearance: appearance, primary: primary,
+			azimuth: nil, altitude: nil, time: nil
+		)
+	}
+
 }

@@ -472,45 +472,14 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
         _ selected: EquinoxUI.AppearanceType,
         for model: GalleryModel
     ) {
-        let hadLight = model.appearance == .light || model.appearance == .both
-        let hadDark = model.appearance == .dark || model.appearance == .both
-        let addsLight = !hadLight
-            && (selected == .light || selected == .both)
-        let addsDark = !hadDark
-            && (selected == .dark || selected == .both)
-
-        for other in dataController.data.items where other !== model {
-            let hadLight = other.appearance == .light
-                || other.appearance == .both
-            let hadDark = other.appearance == .dark
-                || other.appearance == .both
-            let keepsLight = hadLight && !addsLight
-            let keepsDark = hadDark && !addsDark
-
-            let updated: EquinoxUI.AppearanceType
-            switch (keepsLight, keepsDark) {
-            case (false, false): updated = .all
-            case (true, false): updated = .light
-            case (false, true): updated = .dark
-            case (true, true): updated = .both
-            }
-
-            if other.appearance != updated {
-                other.appearance = updated
-                contentView.updateItem(
-                    at: other.number - 1,
-                    model: other,
-                    animated: true
-                )
-            }
-        }
-
-        model.appearance = selected
-        contentView.updateItem(
-            at: model.number - 1,
-            model: model,
-            animated: true
+        let changed = GallerySelectionRules.setAppearance(
+            selected, for: model, in: dataController.data.items
         )
+        for item in changed {
+            contentView.updateItem(
+                at: item.number - 1, model: item, animated: true
+            )
+        }
         contentView.reloadCollection(dataController.data, type: .soft)
     }
 
@@ -527,13 +496,14 @@ extension WallpaperGalleryViewController: WallpaperGalleryDragControllerDelegate
             delegate?.dataWasChanged()
 
         case .primary:
-            if let primaryIndex = dataController.data.items.firstIndex(where: { $0.primary }) {
-                let primaryModel = dataController.data.items[primaryIndex]
-                primaryModel.primary = false
-                contentView.updateItem(at: primaryIndex, model: primaryModel, animated: true)
+            let changed = GallerySelectionRules.setPrimary(
+                model, in: dataController.data.items
+            )
+            for item in changed {
+                contentView.updateItem(
+                    at: item.number - 1, model: item, animated: true
+                )
             }
-            model.primary = true
-            contentView.updateItem(at: index, model: model, animated: true)
             contentView.reloadCollection(dataController.data, type: .soft)
 
         case .azimuth(let azimuth):

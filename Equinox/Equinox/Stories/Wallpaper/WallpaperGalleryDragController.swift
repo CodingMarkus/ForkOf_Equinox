@@ -355,27 +355,21 @@ extension WallpaperGalleryDragController: GalleryCollectionContentViewDelegate {
         guard
             let pasteboardItem = sender.draggingPasteboard.pasteboardItems?.first,
             let pasteboardData = pasteboardItem.data(forType: Constants.solarDragType),
-            let unarchivedData = try? NSKeyedUnarchiver.unarchivedObject(
-                ofClasses: [NSArray.self, NSString.self],
-                from: pasteboardData
-            ),
-            let results = unarchivedData as? [String],
-            let azimuthString = results.first,
-            let altitudeString = results.last,
+            let values = SolarDragValues(data: pasteboardData),
             let number = view.number
         else {
             return false
         }
 
-        let azimuth = Double(azimuthString)
-        let altitude = Double(altitudeString)
+        let azimuth = Double(values.azimuth)
+        let altitude = Double(values.altitude)
         let index = number - 1
 
         delegate?.refreshCollectionData(index, field: .azimuth(azimuth), sender: view)
         delegate?.refreshCollectionData(index, field: .altitude(altitude), sender: view)
 
-        view.azimuth = azimuthString
-        view.altitude = altitudeString
+        view.azimuth = values.azimuth
+        view.altitude = values.altitude
 
         return true
     }

@@ -299,12 +299,13 @@ final class WallpaperCreateViewController: ViewController {
                 : panelURL
 
             do {
-                try createdImage.write(to: finalURL, options: .atomic)
+                try WallpaperFileSaver().save(createdImage, to: finalURL) {
+                    self.delegate?.createViewControllerDidSave()
+                }
                 FilePanelDirectories.rememberSave(for: finalURL)
                 if notify {
                     self.delegate?.createViewControllerShouldNotify(Localization.Wallpaper.Create.fileSaved)
                 }
-                self.delegate?.createViewControllerDidSave()
                 completion?(finalURL)
             } catch {
                 completion?(nil)
@@ -456,10 +457,11 @@ extension WallpaperCreateViewController: NSFilePromiseProviderDelegate {
         }
 
         do {
-            try createdImage.write(to: url, options: .atomic)
-            DispatchQueue.main.async {
-                self.delegate?.createViewControllerDidSave()
-                completionHandler(nil)
+            try WallpaperFileSaver().save(createdImage, to: url) {
+                DispatchQueue.main.async {
+                    self.delegate?.createViewControllerDidSave()
+                    completionHandler(nil)
+                }
             }
         } catch let error {
             completionHandler(error)

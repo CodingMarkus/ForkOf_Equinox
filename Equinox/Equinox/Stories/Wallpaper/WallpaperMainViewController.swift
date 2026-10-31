@@ -60,18 +60,12 @@ final class WallpaperMainViewController: ViewController {
     private let wallpaperService: WallpaperService
     private let solarService: SolarService
     private let imageProvider: ImageProvider
-    private var savedAttributes: [ImageAttributes]?
+    private var editingState: WallpaperEditingState
     
     private weak var galleryController: WallpaperGalleryViewController?
-    private let previewQueue: OperationQueue = {
-        let queue = OperationQueue()
-        queue.qualityOfService = .utility
-        queue.maxConcurrentOperationCount = 1
-        return queue
-    }()
-    private var previewRevision = 0
-    private var previewURL: URL?
-    private var lastPreviewKey: String?
+    private lazy var previewCoordinator = WallpaperPreviewCoordinator(
+        service: wallpaperService
+    )
 
     lazy var contentView: MainContentView = {
         let view = MainContentView()
@@ -94,7 +88,9 @@ final class WallpaperMainViewController: ViewController {
         self.wallpaperService = wallpaperService
         self.solarService = solarService
         self.imageProvider = imageProvider
-        self.savedAttributes = initialAttributes
+        self.editingState = WallpaperEditingState(
+            savedAttributes: initialAttributes
+        )
         super.init()
     }
 
@@ -109,18 +105,27 @@ final class WallpaperMainViewController: ViewController {
         setup()
     }
 
-    deinit {
-        previewQueue.cancelAllOperations()
-        if let previewURL = previewURL {
-            try? FileManager.default.removeItem(at: previewURL)
-        }
-    }
-
     // MARK: - Setup
 
     private func setup() {
         setupView()
         setupActions()
+        previewCoordinator.stateDidChange = { [weak self] state in
+            guard let self = self else { return }
+            let text: String
+            switch state {
+            case .empty:
+                text = Self.formatOutputSize(0)
+            case .calculating:
+                text = Localization.Wallpaper.Main.sizeCalculating
+            case .ready(_, let bytes):
+                text = Self.formatOutputSize(bytes)
+            case .failed:
+                text = Localization.Wallpaper.Main.sizeUnavailable
+            }
+            self.galleryController?.setOutputSizeText(text)
+            self.updateGalleryInfo()
+        }
         contentView.encodingSettingsDidChange = { [weak self] in
             self?.scheduleSizePreview()
         }
@@ -149,7 +154,7 @@ final class WallpaperMainViewController: ViewController {
                 self.delegate?.mainViewControllerCreateWasInteracted(
                     imageAttributes,
                     settings: self.currentExportSettings,
-                    previewURL: self.previewURL
+                    previewURL: self.previewCoordinator.previewURL
                 )
             }
         }
@@ -160,46 +165,23 @@ final class WallpaperMainViewController: ViewController {
     weak var delegate: WallpaperMainViewControllerDelegate?
 
     var canRevert: Bool {
-        guard let initial = savedAttributes,
-              let current = convertData(),
-              initial.count == current.count else {
-            return savedAttributes != nil
-        }
-        for (saved, edited) in zip(initial, current) {
-            if saved.url != edited.url
-                || saved.sourceIndex != edited.sourceIndex
-                || saved.primary != edited.primary
-                || saved.appearanceType != edited.appearanceType {
-                return true
-            }
-            switch (saved.imageType, edited.imageType) {
-            case let (.solar(a, z), .solar(b, y)):
-                if a != b || z != y { return true }
-            case let (.time(a), .time(b)):
-                if a != b { return true }
-            case (.appearance, .appearance):
-                break
-            default:
-                return true
-            }
-        }
-        return false
+        return editingState.canRevert(current: convertData())
     }
 
     var hasUnsavedChanges: Bool {
-        guard savedAttributes != nil else {
-            return galleryController?.data.items.isEmpty == false
-        }
-        return canRevert
+        return editingState.hasUnsavedChanges(
+            current: convertData(),
+            hasItems: galleryController?.data.items.isEmpty == false
+        )
     }
 
     func revert() {
-        guard let initial = savedAttributes else { return }
+        guard let initial = editingState.savedAttributes else { return }
         galleryController?.replace(with: initial)
     }
 
     func markSaved() {
-        savedAttributes = convertData()
+        editingState.markSaved(convertData())
         delegate?.mainViewControllerUnsavedChangesDidChange(hasUnsavedChanges)
     }
 
@@ -282,7 +264,7 @@ final class WallpaperMainViewController: ViewController {
         galleryController = controller
         controller.delegate = self
         addChildController(controller, container: contentView.containerView)
-        if let initial = savedAttributes {
+        if let initial = editingState.savedAttributes {
             DispatchQueue.main.async { [weak controller] in
                 controller?.view.layoutSubtreeIfNeeded()
                 controller?.replace(with: initial)
@@ -351,87 +333,9 @@ extension WallpaperMainViewController: WallpaperGalleryViewControllerDelegate {
     }
 
     private func scheduleSizePreview() {
-        let attributes = convertData() ?? []
-        let settings = currentExportSettings
-        let imageKey = attributes.map { attribute in
-            let timingKey: String
-            switch attribute.imageType {
-            case .solar(let altitude, let azimuth):
-                timingKey = "solar:\(altitude):\(azimuth)"
-            case .time(let date):
-                timingKey = "time:\(date.timeIntervalSinceReferenceDate)"
-            case .appearance:
-                timingKey = "appearance"
-            }
-            let appearanceKey = String(describing: attribute.appearanceType)
-            return "\(attribute.url.path):\(attribute.sourceIndex ?? -1):"
-                + "\(attribute.primary):\(appearanceKey):"
-                + timingKey
-        }.joined(separator: "|")
-        let key = "\(imageKey)|\(settings.lossyCompressionScope)|" +
-            "\(settings.imageQuality)"
-        guard key != lastPreviewKey else { return }
-        lastPreviewKey = key
-        previewRevision += 1
-        let revision = previewRevision
-        previewQueue.cancelAllOperations()
-        if let previewURL = previewURL {
-            try? FileManager.default.removeItem(at: previewURL)
-            self.previewURL = nil
-        }
-        guard !attributes.isEmpty else {
-            galleryController?.setOutputSizeText(Self.formatOutputSize(0))
-            updateGalleryInfo()
-            return
-        }
-        contentView.isCreateButtonEnabled = canCreateWallpaper
-        galleryController?.setOutputSizeText(
-            Localization.Wallpaper.Main.sizeCalculating
+        previewCoordinator.update(
+            convertData() ?? [], settings: currentExportSettings
         )
-        updateGalleryInfo()
-        let operation = BlockOperation { [weak self] in
-            guard let self = self else { return }
-            Thread.sleep(forTimeInterval: 0.6)
-            guard revision == self.previewRevision else { return }
-            do {
-                let data = try self.wallpaperService.createWallpaper(
-                    attributes,
-                    settings: settings,
-                    progressCallback: nil
-                )
-                let url = FileManager.default.temporaryDirectory
-                    .appendingPathComponent(UUID().uuidString)
-                    .appendingPathExtension("heic")
-                try data.write(to: url, options: .atomic)
-                DispatchQueue.main.async {
-                    guard revision == self.previewRevision else {
-                        try? FileManager.default.removeItem(at: url)
-                        return
-                    }
-                    if let oldURL = self.previewURL {
-                        try? FileManager.default.removeItem(at: oldURL)
-                    }
-                    self.previewURL = url
-                    let bytes = (try? url.resourceValues(
-                        forKeys: [.fileSizeKey]
-                    ))?.fileSize ?? data.count
-                    self.galleryController?.setOutputSizeText(
-                        Self.formatOutputSize(bytes)
-                    )
-                    self.updateGalleryInfo()
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    if revision == self.previewRevision {
-                        self.galleryController?.setOutputSizeText(
-                            Localization.Wallpaper.Main.sizeUnavailable
-                        )
-                        self.updateGalleryInfo()
-                    }
-                }
-            }
-        }
-        previewQueue.addOperation(operation)
     }
 
     private var currentExportSettings: ImageExportSettings {

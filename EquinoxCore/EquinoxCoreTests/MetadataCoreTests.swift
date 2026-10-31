@@ -391,6 +391,101 @@ class MetadataCoreTests: XCTestCase {
         XCTAssertThrowsError(try metadataCore.readWallpaper(at: openedURL))
     }
 
+    func testRejectOutOfRangeMetadataIndices() throws {
+        // Given
+        let invalidMetadata: [[String: Any]] = [
+            ["si": [["i": 0, "a": 10.0, "z": 20.0],
+                    ["i": 2, "a": 30.0, "z": 40.0]]],
+            ["si": [["i": 0, "a": 10.0, "z": 20.0],
+                    ["i": 1, "a": 30.0, "z": 40.0]],
+             "ap": ["l": 0, "d": 2]]
+        ]
+
+        // When / Then
+        for value in invalidMetadata {
+            let url = try writeWallpaper(metadata: value, type: "solar")
+            defer { try? FileManager.default.removeItem(at: url) }
+            XCTAssertThrowsError(try metadataCore.readWallpaper(at: url)) {
+                XCTAssertEqual($0 as? MetadataError, .invalidDynamicWallpaper)
+            }
+        }
+    }
+
+    func testRejectInvalidAppearanceAndFrameCounts() throws {
+        // Given
+        let cases: [(String, [String: Any])] = [
+            ("appearance", ["l": 0, "d": 0]),
+            ("appearance", ["l": 0, "d": 2]),
+            ("solar", ["si": [["i": 0, "a": 10.0, "z": 20.0]]]),
+            ("time", ["ti": [["i": 0, "t": 0.0]]])
+        ]
+
+        // When / Then
+        for (type, value) in cases {
+            let url = try writeWallpaper(metadata: value, type: type)
+            defer { try? FileManager.default.removeItem(at: url) }
+            XCTAssertThrowsError(try metadataCore.readWallpaper(at: url)) {
+                XCTAssertEqual($0 as? MetadataError, .invalidDynamicWallpaper)
+            }
+        }
+    }
+
+    func testRejectTimeValuesOutsideOneDay() throws {
+        // Given
+        let invalidTimes = [-0.01, 1.0, 1.5]
+
+        // When / Then
+        for time in invalidTimes {
+            let value: [String: Any] = [
+                "ti": [["i": 0, "t": 0.0], ["i": 1, "t": time]]
+            ]
+            let url = try writeWallpaper(metadata: value, type: "time")
+            defer { try? FileManager.default.removeItem(at: url) }
+            XCTAssertThrowsError(try metadataCore.readWallpaper(at: url)) {
+                XCTAssertEqual($0 as? MetadataError, .invalidDynamicWallpaper)
+            }
+        }
+    }
+
+    private func writeWallpaper(
+        metadata value: [String: Any], type: String
+    ) throws -> URL {
+        let sourceURL = try XCTUnwrap(testBundle.url(
+            forResource: "image", withExtension: "heic"
+        ))
+        let plist = try PropertyListSerialization.data(
+            fromPropertyList: value, format: .binary, options: 0
+        )
+        let metadata = CGImageMetadataCreateMutable()
+        let namespace = "http://ns.apple.com/namespace/1.0/" as CFString
+        let prefix = "apple_desktop" as CFString
+        XCTAssertTrue(CGImageMetadataRegisterNamespaceForPrefix(
+            metadata, namespace, prefix, nil
+        ))
+        let tag = try XCTUnwrap(CGImageMetadataTagCreate(
+            namespace, prefix, type as CFString,
+            .string, plist.base64EncodedString() as CFString
+        ))
+        XCTAssertTrue(CGImageMetadataSetTagWithPath(
+            metadata, nil, "apple_desktop:\(type)" as CFString, tag
+        ))
+        let attributes = (0..<2).map { index in
+            ImageAttributes(
+                url: sourceURL, index: index, primary: index == 0,
+                imageType: .solar(altitude: 10, azimuth: 20),
+                appearanceType: nil
+            )
+        }
+        let data = try ImageCoreImpl().createImage(
+            from: attributes, metadata: metadata, progressCallback: nil
+        )
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("heic")
+        try data.write(to: url)
+        return url
+    }
+
     private func writeWallpaper(
         _ attributes: [ImageAttributes]
     ) throws -> URL {

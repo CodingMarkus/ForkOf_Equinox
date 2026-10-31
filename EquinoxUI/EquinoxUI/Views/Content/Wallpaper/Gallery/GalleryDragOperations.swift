@@ -26,7 +26,7 @@ public enum GalleryDragOperations {
 			let item = items[index]
 			return GalleryModel(
 				number: item.number, url: item.url,
-				appearance: item.appearance, primary: false,
+				appearance: .all, primary: false,
 				azimuth: item.azimuth, altitude: item.altitude,
 				time: item.time, sourceIndex: item.sourceIndex
 			)

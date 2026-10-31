@@ -60,8 +60,10 @@ class GalleryDragOperationsTests: XCTestCase {
 		XCTAssertFalse(copy === model)
 		XCTAssertEqual(copy.url, model.url)
 		XCTAssertEqual(copy.sourceIndex, 3)
-		XCTAssertEqual(copy.appearance, .dark)
+		XCTAssertEqual(copy.appearance, .all)
 		XCTAssertFalse(copy.primary)
+		XCTAssertEqual(model.appearance, .dark)
+		XCTAssertTrue(model.primary)
 		XCTAssertEqual(copy.azimuth, 12)
 		XCTAssertEqual(copy.altitude, 34)
 		XCTAssertEqual(copy.time, date)
@@ -85,6 +87,19 @@ class GalleryDragOperationsTests: XCTestCase {
 		XCTAssertTrue(GalleryDragOperations.copies(
 			models, indices: [0], limit: 0
 		).isEmpty)
+
+		let marked = [AppearanceType.light, .dark, .both, .all].map {
+			model(1, appearance: $0, primary: true)
+		}
+		let unmarked = GalleryDragOperations.copies(
+			marked, indices: Array(marked.indices)
+		)
+		XCTAssertEqual(unmarked.map { $0.appearance },
+			[.all, .all, .all, .all])
+		XCTAssertTrue(unmarked.allSatisfy { !$0.primary })
+		XCTAssertEqual(marked.map { $0.appearance },
+			[.light, .dark, .both, .all])
+		XCTAssertTrue(marked.allSatisfy { $0.primary })
 	}
 
 	func testCopyInsertionOnEitherSideOfMiddleImage() throws {

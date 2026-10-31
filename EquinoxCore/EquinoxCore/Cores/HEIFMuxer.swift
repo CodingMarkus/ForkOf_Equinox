@@ -147,8 +147,7 @@ enum HEIFMuxer {
 		let primaryID = try primaryItemID(data, box: primaryBox)
 		let itemID: UInt32
 		if let index = index {
-			let ids = try imageItemIDs(data, box: infoBox,
-										 type: "hvc1")
+			let ids = try imageItemIDs(data, box: infoBox)
 			guard ids.indices.contains(index) else {
 				throw MuxError.invalidFile
 			}
@@ -210,20 +209,24 @@ enum HEIFMuxer {
 		}), let properties = children.first(where: {
 			fourCC($0.type) == "iprp"
 		}) else { throw MuxError.invalidFile }
-		let gridIDs = try imageItemIDs(data, box: info, type: "grid")
-		guard !gridIDs.isEmpty else { return nil }
-		guard gridIDs.indices.contains(index),
-				let references = children.first(where: {
-					fourCC($0.type) == "iref"
-				}) else { throw MuxError.invalidFile }
-		let tiles = try derivedItemIDs(data, box: references,
-										from: gridIDs[index])
+		let imageIDs = try imageItemIDs(data, box: info)
+		guard imageIDs.indices.contains(index) else {
+			throw MuxError.invalidFile
+		}
+		let imageID = imageIDs[index]
+		guard try itemType(data, box: info, itemID: imageID) == "grid" else {
+			return nil
+		}
+		guard let references = children.first(where: {
+			fourCC($0.type) == "iref"
+		}) else { throw MuxError.invalidFile }
+		let tiles = try derivedItemIDs(data, box: references, from: imageID)
 		guard !tiles.isEmpty,
 				tiles.count < Int(UInt16.max),
 				Set(tiles).count == tiles.count else {
 			throw MuxError.unsupportedFile
 		}
-		let ids = [gridIDs[index]] + tiles
+		let ids = [imageID] + tiles
 		let idatStart = children.first(where: {
 			fourCC($0.type) == "idat"
 		})?.payloadStart
@@ -464,9 +467,7 @@ enum HEIFMuxer {
 	}
 
 	private static func imageItemIDs(
-		_ data: Data,
-		box: Box,
-		type: String
+		_ data: Data, box: Box
 	) throws -> [UInt32] {
 		guard box.end - box.payloadStart >= 6 else {
 			throw MuxError.invalidFile
@@ -492,6 +493,8 @@ enum HEIFMuxer {
 				throw MuxError.invalidFile
 			}
 			let entryVersion = data[entry.payloadStart]
+			let flags = try read24(data, at: entry.payloadStart + 1)
+			if flags & 1 != 0 { continue }
 			let start = entry.payloadStart + 4
 			let id: UInt32
 			let typeOffset: Int
@@ -511,7 +514,7 @@ enum HEIFMuxer {
 				continue
 			}
 			let itemType = fourCC(data[typeOffset..<(typeOffset + 4)])
-			if itemType == type { ids.append(id) }
+			if itemType == "hvc1" || itemType == "grid" { ids.append(id) }
 		}
 		return ids
 	}
